@@ -1,0 +1,17 @@
+{
+  "version": "local-seed-v1",
+  "groupApprovers": {
+    "示例小组": "示例审批人"
+  },
+  "users": [
+    {
+      "name": "示例用户",
+      "phone": "19900000000",
+      "group": "示例小组",
+      "role": "member"
+    }
+  ],
+  "removedLoginKeys": [
+    "旧用户:19900000001"
+  ]
+}

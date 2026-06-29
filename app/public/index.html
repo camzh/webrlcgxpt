@@ -1,0 +1,2246 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>润六尺供需平台</title>
+  <style>
+    :root {
+      --ink: #092848;
+      --muted: #58748f;
+      --line: #cfe3ed;
+      --supply: #f2ae2e;
+      --demand: #2199a6;
+      --accent: #126fbd;
+      --danger: #ef5160;
+      --ok: #0f9b7f;
+      --shadow: 0 10px 28px rgba(25, 61, 92, .1);
+      --font-ui: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      --text-xl: 22px;
+      --text-lg: 16px;
+      --text-md: 14px;
+      --text-sm: 12px;
+      --weight-bold: 700;
+      --weight-heavy: 800;
+      --weight-black: 900;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font-ui);
+      background: linear-gradient(135deg, #e1f3ff 0, #f5fbf7 100%);
+      color: var(--ink);
+      overflow-x: hidden;
+      font-size: var(--text-md);
+    }
+    button, input, select, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    .hidden { display: none !important; }
+    .login {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+    .login-box {
+      width: min(430px, 100%);
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+    }
+    .mark, .logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #078d91, #126fbd);
+      color: white;
+      font-weight: 900;
+      flex: 0 0 56px;
+    }
+    .mark { margin-bottom: 16px; }
+    .login h1 { margin: 0 0 8px; font-size: 26px; font-weight: var(--weight-black); }
+    .login p { margin: 0 0 18px; color: var(--muted); font-size: var(--text-md); }
+    .login input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0 14px;
+      margin-top: 10px;
+    }
+    .login button, .primary {
+      height: 40px;
+      border-radius: 11px;
+      background: #126fbd;
+      color: white;
+      font-weight: var(--weight-heavy);
+      padding: 0 16px;
+    }
+    .login > .login-box > button { width: 100%; height: 48px; margin-top: 14px; }
+    .err { color: var(--danger); min-height: 22px; margin-top: 10px; }
+    .app { min-height: 100vh; padding: 16px; }
+    .top {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .brand { display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .brand small {
+      display: block;
+      color: #167085;
+      font-weight: var(--weight-heavy);
+      font-size: var(--text-sm);
+    }
+    .brand h1 { margin: 2px 0 0; font-size: 28px; line-height: 1.05; font-weight: var(--weight-black); }
+    .status {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--line);
+      color: #315875;
+      font-weight: var(--weight-bold);
+      white-space: nowrap;
+    }
+    .pill.ok { background: #dff8f1; color: #087a65; }
+    .ghost {
+      height: 38px;
+      border-radius: 10px;
+      background: #fff;
+      color: #19415f;
+      padding: 0 12px;
+      font-weight: var(--weight-bold);
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .filters {
+      background: rgba(255, 255, 255, .74);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 150px 140px 140px 150px 170px minmax(210px, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .field label, .form label {
+      display: block;
+      font-size: var(--text-sm);
+      color: var(--muted);
+      font-weight: var(--weight-bold);
+      margin-bottom: 6px;
+    }
+    .field input, .field select, .form input, .form select, .form textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: white;
+      color: var(--ink);
+      padding: 10px 12px;
+      min-width: 0;
+    }
+    .field input, .field select { height: 39px; padding: 0 10px; border-radius: 10px; }
+    .toolbar {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .toolbar button { height: 37px; border-radius: 10px; padding: 0 12px; font-size: var(--text-sm); font-weight: var(--weight-bold); }
+    .add-supply { background: #fff2cd; color: #8c6100; border: 1px solid #ffd171; }
+    .add-demand { background: #ddf6fa; color: #087487; border: 1px solid #a9e7f4; }
+    .board {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .panel {
+      min-width: 0;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .5);
+    }
+    .panel.supply {
+      border-color: #f1cf7d;
+      background: linear-gradient(180deg, #fff7df, #fffdf8);
+    }
+    .panel.demand {
+      border-color: #9ee1ee;
+      background: linear-gradient(180deg, #e8f9ff, #fbfdff);
+    }
+    .panel-head {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+    }
+    .panel-head h2 { margin: 0; font-size: 24px; font-weight: var(--weight-black); }
+    .meter {
+      height: 9px;
+      flex: 1;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      overflow: hidden;
+    }
+    .meter span { display: block; height: 100%; width: 70%; border-radius: 999px; }
+    .supply .meter span { background: var(--supply); }
+    .demand .meter span { background: var(--demand); }
+    .list {
+      height: calc(100vh - 250px);
+      min-height: 520px;
+      overflow: auto;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      align-content: start;
+      gap: 10px;
+    }
+    .empty { padding: 30px; text-align: center; color: var(--muted); grid-column: 1 / -1; }
+    .card {
+      position: relative;
+      min-width: 0;
+      width: 100%;
+      background: rgba(255, 255, 255, .94);
+      border: 1px solid rgba(120, 150, 170, .25);
+      border-radius: 12px;
+      padding: 10px 12px 48px;
+      box-shadow: 0 5px 18px rgba(31, 75, 112, .07);
+      display: grid;
+      gap: 10px;
+    }
+    .card.is-collapsed {
+      height: 150px;
+      overflow: hidden;
+    }
+    .card.is-collapsed::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 56px;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, .96) 58%);
+      border-radius: 0 0 12px 12px;
+    }
+    .card.deleted.is-collapsed::after {
+      background: linear-gradient(180deg, rgba(244, 246, 248, 0), rgba(244, 246, 248, .96) 58%);
+    }
+    .card.urgent {
+      border-color: rgba(238, 77, 90, .6);
+      box-shadow: inset 4px 0 0 var(--danger), 0 5px 18px rgba(238, 77, 90, .1);
+    }
+    .card.deleted { opacity: .68; background: #f4f6f8; }
+    .mainline {
+      display: grid;
+      grid-template-columns: 54px minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .card-main {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: start;
+    }
+    .card-copy {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+    .thumb {
+      width: 54px;
+      height: 54px;
+      border-radius: 11px;
+      background: #d7e6ef;
+      object-fit: cover;
+    }
+    .media-stack {
+      width: 54px;
+      display: grid;
+      gap: 6px;
+    }
+    .media-stack .thumb {
+      width: 54px;
+      height: 42px;
+      border-radius: 9px;
+    }
+    .media-stack .thumb:first-child {
+      height: 54px;
+    }
+    .thumb.clickable { cursor: zoom-in; }
+    .thumb.video-thumb {
+      display: grid;
+      place-items: center;
+      color: #126099;
+      font-size: 12px;
+      font-weight: var(--weight-black);
+      background: linear-gradient(145deg, #dbeef8, #f2f8fc);
+    }
+    .title {
+      min-width: 0;
+      font-size: 18px;
+      font-weight: var(--weight-black);
+      line-height: 1.28;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .condition { color: #956707; }
+    .price {
+      min-width: 170px;
+      max-width: 220px;
+      text-align: left;
+      font-size: var(--text-sm);
+      font-weight: var(--weight-bold);
+      color: #123f69;
+      line-height: 1.35;
+      display: grid;
+      gap: 6px;
+      justify-items: end;
+      align-content: start;
+      padding: 10px 12px;
+      border: 1px solid #dbe8f1;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fbfdff, #f5f9fc);
+    }
+    .price-section {
+      width: 100%;
+      display: grid;
+      gap: 6px;
+      padding: 9px 10px;
+      border: 1px solid #d6e4ee;
+      border-radius: 12px;
+      background: #fff;
+    }
+    .price-section.sale-section {
+      background: linear-gradient(180deg, #fffdfa, #fff7eb);
+      border-color: #f0d8ac;
+    }
+    .price-section.rental-section {
+      background: linear-gradient(180deg, #fbfffb, #f1fbf1);
+      border-color: #cfe7cf;
+    }
+    .price-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .price-section-title {
+      font-size: 11px;
+      font-weight: var(--weight-black);
+      color: #5f7893;
+      letter-spacing: .2px;
+    }
+    .price-line {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .price-line.sale-line .price-value {
+      font-size: 18px;
+      font-weight: var(--weight-black);
+      color: #0c3660;
+    }
+    .price-label {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #e5f2ff;
+      color: #1460a2;
+    }
+    .price-label.rental { background: #eef9ec; color: #2f7f38; }
+    .price-detail-list {
+      display: grid;
+      gap: 6px;
+    }
+    .price-detail-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      width: 100%;
+    }
+    .price-detail-row .price-value {
+      font-size: 15px;
+      font-weight: var(--weight-heavy);
+      color: #0f4f7e;
+    }
+    .meta {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+    }
+    .tag {
+      font-size: var(--text-sm);
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #edf6fb;
+      color: #38617d;
+      font-weight: var(--weight-bold);
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+    .tag.gold { background: #fff1c8; color: #8f6500; }
+    .tag.blue { background: #dff2ff; color: #106aa4; }
+    .tag.red { background: #ffe2e6; color: #c82738; }
+    .tag.green { background: #dff8f1; color: #087a65; }
+    .note {
+      color: #5f7893;
+      margin-top: 7px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+    }
+    .note-box {
+      min-height: 84px;
+      color: #5f7893;
+      line-height: 1.55;
+      font-size: var(--text-md);
+      padding: 4px 0 0;
+      overflow-wrap: anywhere;
+    }
+    .config {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px 22px;
+      color: #5f7893;
+      font-size: 14px;
+      line-height: 1.35;
+    }
+    .config-title {
+      grid-column: 1 / -1;
+      color: #6a7f95;
+      font-size: 16px;
+      font-weight: var(--weight-black);
+      margin-bottom: 2px;
+    }
+    .config-cell {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+    .config-cell b {
+      color: #385f7c;
+      font-size: 14px;
+      font-weight: var(--weight-heavy);
+    }
+    .config-cell em {
+      color: #668099;
+      font-size: 14px;
+      font-style: normal;
+      font-weight: var(--weight-semibold);
+    }
+    .card-foot {
+      position: absolute;
+      right: 20px;
+      bottom: 10px;
+      z-index: 1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      width: auto;
+      padding: 0;
+    }
+    .mini { height: 30px; border-radius: 999px; background: #e4f4ff; color: #126099; padding: 0 10px; font-weight: var(--weight-bold); font-size: var(--text-sm); }
+    .toggle-card {
+      min-width: 62px;
+      height: 34px;
+      padding: 0 14px;
+      background: linear-gradient(180deg, #176fa8, #0e5b8d);
+      color: #fff;
+      border: 1px solid rgba(9, 68, 112, .28);
+      box-shadow: 0 5px 12px rgba(14, 91, 141, .24);
+      font-size: 14px;
+      font-weight: var(--weight-black);
+    }
+    .toggle-card.is-open {
+      height: 30px;
+      min-width: 52px;
+      padding: 0 10px;
+      background: #e4f4ff;
+      color: #126099;
+      border-color: transparent;
+      box-shadow: none;
+      font-size: var(--text-sm);
+      font-weight: var(--weight-bold);
+    }
+    .danger { background: #ffe2e6; color: #bd2538; }
+    .restore { background: #dff8f1; color: #087a65; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 23, 35, .42);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      z-index: 10;
+    }
+    .dialog {
+      width: min(860px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: white;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+    }
+    .dialog.wide { width: min(1020px, 100%); }
+    .dialog-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .dialog h3 { margin: 0; font-size: var(--text-xl); font-weight: var(--weight-black); }
+    .form {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .form .wide { grid-column: 1 / -1; }
+    .form textarea { min-height: 84px; resize: vertical; }
+    .checks { display: flex; gap: 16px; align-items: center; padding-top: 6px; }
+    .urgent-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      padding: 12px 16px;
+      border: 1px solid #ffccd2;
+      border-radius: 12px;
+      background: #fff3f5;
+      color: #a32637;
+      font-size: var(--text-lg);
+      font-weight: var(--weight-heavy);
+      line-height: 1;
+    }
+    .urgent-check input {
+      width: 20px;
+      height: 20px;
+      margin: 0;
+      accent-color: #ef5160;
+      flex: 0 0 20px;
+      align-self: center;
+      vertical-align: middle;
+    }
+    .urgent-check span {
+      display: inline-flex;
+      align-items: center;
+      line-height: 20px;
+      margin-left: 18px;
+    }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .pricing-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #f8fcff;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .pricing-block {
+      border: 1px solid #d8e9f4;
+      border-radius: 12px;
+      padding: 12px;
+      background: white;
+    }
+    .pricing-block h4 {
+      margin: 0 0 10px;
+      font-size: var(--text-md);
+      color: #1d567e;
+    }
+    .hint {
+      margin: 0;
+      color: #66809b;
+      line-height: 1.6;
+      font-size: var(--text-sm);
+    }
+    .log-item { border-bottom: 1px solid var(--line); padding: 10px 0; color: #315875; }
+    .log-item strong { color: #092848; }
+    .logs-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .logs-count { color: var(--muted); font-size: var(--text-sm); }
+    .logs-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+    .logs-table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: var(--text-sm); }
+    .logs-table th,
+    .logs-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .logs-table th { background: #f7fafc; color: #315875; font-weight: 700; white-space: nowrap; }
+    .logs-table tr:last-child td { border-bottom: 0; }
+    .logs-table .nowrap { white-space: nowrap; }
+    .logs-table .muted-cell { color: var(--muted); }
+    .user-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 0;
+      color: #315875;
+    }
+    .user-row strong { color: var(--ink); }
+    .user-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .member-admin-toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 130px 130px 130px;
+      gap: 10px;
+      margin-bottom: 12px;
+      align-items: stretch;
+    }
+    .member-admin-toolbar input,
+    .member-admin-toolbar select,
+    .member-add-strip input,
+    .member-add-strip select,
+    .member-table input,
+    .member-table select {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 10px;
+      background: #fff;
+      color: var(--ink);
+      line-height: 40px;
+    }
+    .member-add-strip {
+      display: grid;
+      grid-template-columns: 84px minmax(120px, 1fr) minmax(140px, 1.1fr) 132px 132px 88px;
+      gap: 8px;
+      align-items: stretch;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #8bc8ff;
+      border-radius: 12px;
+      background: #f8fcff;
+    }
+    .member-add-label {
+      display: flex;
+      align-items: center;
+      color: #126fbd;
+      font-weight: var(--weight-black);
+      white-space: nowrap;
+    }
+    .member-add-strip .primary {
+      width: 100%;
+      height: 40px;
+      border-radius: 10px;
+      padding: 0 10px;
+    }
+    .member-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .member-stat {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #fff;
+      padding: 10px 12px;
+    }
+    .member-stat strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .member-stat span {
+      color: var(--muted);
+      font-size: var(--text-sm);
+    }
+    .member-table-wrap {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    .member-table {
+      width: 100%;
+      min-width: 820px;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+      background: #fff;
+    }
+    .member-table th,
+    .member-table td {
+      height: 48px;
+      padding: 7px 9px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      overflow-wrap: anywhere;
+    }
+    .member-table th {
+      background: #f7fafc;
+      color: #315875;
+      font-weight: 700;
+    }
+    .member-table th:nth-child(1) { width: 13%; }
+    .member-table th:nth-child(2) { width: 15%; }
+    .member-table th:nth-child(3) { width: 15%; }
+    .member-table th:nth-child(4) { width: 13%; }
+    .member-table th:nth-child(5) { width: 12%; }
+    .member-table th:nth-child(6) { width: 12%; }
+    .member-table th:nth-child(7) { width: 20%; }
+    .member-table th:nth-child(7),
+    .member-table td:nth-child(7) { text-align: center; }
+    .member-table td:nth-child(3),
+    .member-table td:nth-child(4) { padding-top: 4px; padding-bottom: 4px; }
+    .member-status {
+      display: inline-flex;
+      align-items: center;
+      height: 24px;
+      padding: 0 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-weight: 700;
+    }
+    .member-status.approved { color: #087a65; background: #e9fbf6; border-color: #bceee3; }
+    .member-status.disabled { color: #bd2538; background: #ffe2e6; border-color: #ffc3cb; }
+    .member-row-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: nowrap;
+      white-space: nowrap;
+    }
+    .member-row-actions .mini {
+      min-width: 52px;
+      height: 30px;
+      padding: 0 10px;
+      line-height: 30px;
+    }
+    .sms-login-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 116px;
+      gap: 8px;
+      width: 100%;
+      align-items: stretch;
+      margin-top: 10px;
+    }
+    .sms-login-row button {
+      width: 116px;
+      height: 46px;
+      margin-top: 0;
+      padding: 0 10px;
+      white-space: nowrap;
+    }
+    .sms-login-row input { margin-top: 0; }
+    .media-stage {
+      display: grid;
+      place-items: center;
+      min-height: 320px;
+      background: #061727;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .media-stage img, .media-stage video {
+      max-width: 100%;
+      max-height: 76vh;
+      display: block;
+    }
+    @media (max-width: 1180px) {
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .toolbar { justify-content: flex-start; }
+      .board { grid-template-columns: 1fr; }
+      .list { height: 48vh; min-height: 390px; }
+    }
+    @media (max-width: 1040px) {
+      .member-admin-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .member-add-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (max-width: 760px) {
+      .app { padding: 12px; }
+      .top { align-items: flex-start; flex-direction: column; }
+      .status { justify-content: flex-start; }
+      .brand h1 { font-size: 24px; }
+      .filters, .form, .pricing-grid { grid-template-columns: 1fr; }
+      .member-admin-toolbar, .member-add-strip { grid-template-columns: 1fr; }
+      .list { height: 48vh; min-height: 360px; padding: 9px; }
+      .card-main { grid-template-columns: 1fr; }
+      .price { text-align: left; max-width: none; justify-items: stretch; }
+      .toolbar button { flex: 1 1 calc(50% - 8px); }
+      .config { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <section id="login" class="login">
+    <div class="login-box">
+      <div class="mark">润</div>
+      <h1>润六尺供需平台</h1>
+      <p>请输入姓名、手机号和短信验证码登录。</p>
+      <input id="loginName" placeholder="姓名">
+      <input id="loginPhone" placeholder="手机号">
+      <div class="sms-login-row">
+        <input id="smsCode" placeholder="验证码" inputmode="numeric" maxlength="6">
+        <button class="ghost" onclick="sendSmsCode()">获取验证码</button>
+      </div>
+      <button onclick="login()">进入看板</button>
+      <div id="loginErr" class="err"></div>
+    </div>
+  </section>
+  <section id="passwordModal" class="modal hidden">
+    <div class="dialog">
+      <div class="dialog-head">
+        <h3>首次登录请修改密码</h3>
+        <button class="ghost" onclick="logout()">退出登录</button>
+      </div>
+      <div class="form">
+        <div class="wide"><label>原密码</label><input id="oldPassword" type="password" placeholder="请输入初始密码"></div>
+        <div class="wide"><label>新密码</label><input id="newPassword" type="password" placeholder="至少 6 位，不能继续使用初始密码"></div>
+        <div class="wide"><label>确认新密码</label><input id="newPassword2" type="password" placeholder="再次输入新密码"></div>
+        <div id="passwordErr" class="err wide"></div>
+        <div class="wide toolbar"><button type="button" class="ghost" onclick="logout()">切换账号</button><button type="button" onclick="changePassword()">确认修改</button></div>
+      </div>
+    </div>
+  </section>
+
+  <main id="app" class="app hidden">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">润六</div>
+        <div>
+          <small>RUNLIUCHI SUPPLY DEMAND HUB</small>
+          <h1>润六尺供需平台</h1>
+        </div>
+      </div>
+      <div class="status">
+        <span class="pill ok">实时同步已连接</span>
+        <span id="updated" class="pill">最近更新：--</span>
+        <span id="role" class="pill">成员</span>
+        <button class="ghost" onclick="logout()">退出登录</button>
+      </div>
+    </header>
+
+    <section class="filters">
+      <div class="field"><label>日期</label><input id="date" type="date"></div>
+      <div class="field">
+        <label>品类</label>
+        <select id="category">
+          <option value="">全部</option>
+          <option>整机服务器</option>
+          <option>CPU</option>
+          <option>网卡</option>
+          <option>模组</option>
+          <option>机头</option>
+          <option>SSD固态</option>
+          <option>企业机械盘</option>
+          <option>内存</option>
+          <option>GPU</option>
+          <option>其他</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>资源范围</label>
+        <select id="scope">
+          <option value="">全部</option>
+          <option value="company">公司</option>
+          <option value="mine">我的</option>
+          <option value="shared">共享给我</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>客户类型</label>
+        <select id="customer">
+          <option value="">全部</option>
+          <option>老客户</option>
+          <option>新客户</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>排序</label>
+        <select id="sort">
+          <option value="new">最近更新</option>
+          <option value="urgent">紧急优先</option>
+          <option value="priceDesc">价格从高到低</option>
+          <option value="priceAsc">价格从低到高</option>
+          <option value="qtyDesc">数量从多到少</option>
+        </select>
+      </div>
+      <div class="field"><label>关键词</label><input id="q" placeholder="型号 / 品牌 / 配置 / 备注"></div>
+      <div class="toolbar">
+        <button class="ghost" onclick="loadItems()">刷新</button>
+        <button class="ghost" onclick="downloadTemplate()">下载模板</button>
+        <button class="ghost" onclick="openImport()">批量导入</button>
+        <button class="ghost" onclick="exportCsv()">导出结果</button>
+        <button id="deletedBtn" class="ghost hidden" onclick="toggleDeleted()">查看已删除</button>
+        <button id="logsBtn" class="ghost hidden" onclick="openLogs()">操作日志</button>
+        <button id="memberAdminBtn" class="ghost hidden" onclick="openMemberAdmin()">成员管理</button>
+        <button class="add-supply" onclick="openForm('supply')">新增货源</button>
+        <button class="add-demand" onclick="openForm('demand')">新增需求</button>
+      </div>
+    </section>
+
+    <section class="board">
+      <section class="panel supply">
+        <div class="panel-head"><h2>货源池</h2><div class="meter"><span></span></div><span id="supplyCount" class="pill">0</span></div>
+        <div id="supplyList" class="list"></div>
+      </section>
+      <section class="panel demand">
+        <div class="panel-head"><h2>需求池</h2><div class="meter"><span></span></div><span id="demandCount" class="pill">0</span></div>
+        <div id="demandList" class="list"></div>
+      </section>
+    </section>
+  </main>
+
+  <section id="modal" class="modal hidden">
+    <div class="dialog">
+      <div class="dialog-head">
+        <h3 id="formTitle">新增</h3>
+        <button class="ghost" onclick="closeForm()">关闭</button>
+      </div>
+      <form id="itemForm" class="form" onsubmit="saveItem(event)">
+        <input type="hidden" id="side">
+        <div>
+          <label>品类</label>
+          <select id="fCategory" onchange="toggleMachineFields()">
+            <option>整机服务器</option>
+            <option>CPU</option>
+            <option>网卡</option>
+            <option>模组</option>
+            <option>机头</option>
+            <option>SSD固态</option>
+            <option>企业机械盘</option>
+            <option>内存</option>
+            <option>GPU</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div>
+          <label>成色/状态</label>
+          <select id="fCondition">
+            <option>拆机</option>
+            <option>全新</option>
+            <option>二手</option>
+            <option>未标注</option>
+          </select>
+        </div>
+        <div class="wide"><label>型号规格</label><input id="fTitle" required placeholder="品牌 型号 / 频率 / 年份 / 容量"></div>
+        <div><label>数量</label><input id="fQuantity" placeholder="500 件"></div>
+        <div><label>联系人</label><input id="fPerson" placeholder="张老板"></div>
+        <div><label>电话/微信</label><input id="fPhone" placeholder="手机号或微信"></div>
+        <div id="customerField">
+          <label>客户标签</label>
+          <select id="fCustomer">
+            <option>老客户</option>
+            <option>新客户</option>
+          </select>
+        </div>
+        <div>
+          <label>资源范围</label>
+          <select id="fScope" onchange="onScopeChange()">
+            <option value="company">公司货源</option>
+            <option value="mine">我的货源</option>
+            <option value="shared">共享给我</option>
+          </select>
+        </div>
+        <div id="sharedField">
+          <label>共享给谁</label>
+          <input id="fSharedTo" placeholder="多个姓名/手机号用逗号分隔">
+        </div>
+        <div><label>图片/视频（最多3个）</label><input id="fMedia" type="file" accept="image/*,video/*" multiple></div>
+        <div id="cargoOwnerField" class="wide">
+          <label>货主信息</label>
+          <textarea id="fCargoOwnerInfo" placeholder="填写真实货主、来源方、关键联系人等内部信息"></textarea>
+          <p class="hint">该信息只有对应组别管理员、超级管理员、上传者本身可以看到，其他组成员或其他组管理员均无法看到。选择“我的货源”或“共享给我”时必须填写。</p>
+        </div>
+        <div class="hidden"><label>视频</label><input id="fVideo" type="file" accept="video/*"></div>
+        <div class="hidden"><label>图片</label><input id="fImage" type="file" accept="image/*"></div>
+        <div class="wide pricing-box">
+          <div class="form">
+            <div>
+              <label>报价方式</label>
+              <select id="fPricingType" onchange="togglePricingFields()">
+                <option value="sale">只填售卖</option>
+                <option value="rental">只填租赁</option>
+                <option value="both">售卖 + 租赁</option>
+              </select>
+            </div>
+            <div class="hidden"></div>
+          </div>
+          <div class="pricing-grid" style="margin-top:12px;">
+            <div id="saleBlock" class="pricing-block">
+              <h4>售卖报价</h4>
+              <div class="form">
+                <div><label>售卖价格</label><input id="fSalePrice" placeholder="5000"></div>
+                <div>
+                  <label>报价单位</label>
+                  <select id="fSaleUnit" onchange="syncRentalUnit()">
+                    <option value="万元/台">万元/台</option>
+                    <option value="万元/片">万元/片</option>
+                    <option value="万元/条">万元/条</option>
+                    <option value="美金/台">美金/台</option>
+                    <option value="美金/片">美金/片</option>
+                    <option value="美金/条">美金/条</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div id="rentalBlock" class="pricing-block">
+              <h4>租赁报价</h4>
+              <div class="form">
+                <div>
+                  <label>租赁单位</label>
+                  <select id="fRentalUnit">
+                    <option value="万/月/台">万/月/台</option>
+                    <option value="万/月/片">万/月/片</option>
+                    <option value="万/月/条">万/月/条</option>
+                    <option value="美金/月/台">美金/月/台</option>
+                    <option value="美金/月/片">美金/月/片</option>
+                    <option value="美金/月/条">美金/月/条</option>
+                  </select>
+                </div>
+                <div><label>一年全包</label><input id="rqOneYearFull" placeholder="3.2"></div>
+                <div><label>两年全包</label><input id="rqTwoYearFull" placeholder="2.8"></div>
+                <div><label>三年全包</label><input id="rqThreeYearFull" placeholder="2.5"></div>
+                <div><label>一年搬迁</label><input id="rqOneYearMove" placeholder="2.8"></div>
+                <div><label>两年搬迁</label><input id="rqTwoYearMove" placeholder="2.8"></div>
+                <div><label>三年搬迁</label><input id="rqThreeYearMove" placeholder="2.5"></div>
+              </div>
+            </div>
+          </div>
+          <p class="hint" style="margin-top:10px;">报价单位可选择人民币或美金；香港交付业务可选择美金单位。</p>
+        </div>
+        <div class="wide checks"><label class="urgent-check"><input id="fUrgent" type="checkbox"><span>标记紧急</span></label></div>
+        <div id="machineFields" class="wide form hidden">
+          <div><label>GPU</label><input id="mcGpu"></div>
+          <div><label>CPU</label><input id="mcCpu"></div>
+          <div><label>内存</label><input id="mcMemory"></div>
+          <div><label>系统盘</label><input id="mcSystemDisk"></div>
+          <div><label>数据盘</label><input id="mcDataDisk"></div>
+          <div><label>网卡1</label><input id="mcNic1"></div>
+          <div><label>网卡2</label><input id="mcNic2"></div>
+          <div><label>网卡3</label><input id="mcNic3"></div>
+          <div><label>网卡4</label><input id="mcNic4"></div>
+          <div><label>更多网卡</label><input id="mcExtraNics"></div>
+          <div><label>Raid卡</label><input id="mcRaid"></div>
+          <div><label>电源/PSU</label><input id="mcPsu"></div>
+          <div><label>PCIE交换芯片</label><input id="mcPcieSwitch"></div>
+        </div>
+        <div class="wide"><label>备注</label><textarea id="fNote" placeholder="付款、票税、地点、料号、交付要求等"></textarea></div>
+        <div class="wide dialog-actions">
+          <button type="button" class="ghost" onclick="closeForm()">取消</button>
+          <button id="saveBtn" class="primary">保存发布</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section id="importModal" class="modal hidden">
+    <div class="dialog">
+      <div class="dialog-head"><h3>批量导入</h3><button class="ghost" onclick="closeImport()">关闭</button></div>
+      <div class="form">
+        <div>
+          <label>导入类型</label>
+          <select id="importSide">
+            <option value="supply">货源</option>
+            <option value="demand">需求</option>
+          </select>
+        </div>
+        <div><label>导入文件</label><input id="importFile" type="file" accept=".csv,text/csv,.xlsx,.xls" onchange="loadImportFile()"></div>
+        <div class="wide"><label>CSV 内容 / Excel 预览</label><textarea id="importText"></textarea></div>
+        <div class="wide"><p class="hint">支持 CSV 和 .xlsx。老式 .xls 请另存为 .xlsx 或 CSV。范围可填 mine/company/shared，或不填默认公司。</p></div>
+        <div class="wide dialog-actions">
+          <button type="button" class="ghost" onclick="closeImport()">取消</button>
+          <button type="button" class="primary" onclick="importCsv()">确认导入</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="logsModal" class="modal hidden">
+    <div class="dialog wide">
+      <div class="dialog-head">
+        <h3>操作日志</h3>
+        <div class="dialog-actions">
+          <button class="ghost" onclick="exportLogsTable()">导出表格</button>
+          <button class="ghost" onclick="closeLogs()">关闭</button>
+        </div>
+      </div>
+      <div class="logs-toolbar">
+        <div id="logsCount" class="logs-count"></div>
+      </div>
+      <div id="logsList"></div>
+    </div>
+  </section>
+  <section id="memberAdminModal" class="modal hidden">
+    <div class="dialog wide">
+      <div class="dialog-head">
+        <h3>成员管理</h3>
+        <div class="dialog-actions">
+          <button class="ghost" onclick="exportMemberAdmin()">导出名单</button>
+          <button class="ghost" onclick="closeMemberAdmin()">关闭</button>
+        </div>
+      </div>
+      <div class="member-summary">
+        <div class="member-stat"><strong id="memberTotal">0</strong><span>成员总数</span></div>
+        <div class="member-stat"><strong id="memberAdminCount">0</strong><span>管理员</span></div>
+        <div class="member-stat"><strong id="memberDisabledCount">0</strong><span>已停用</span></div>
+      </div>
+      <div id="memberAddArea"></div>
+      <div class="member-admin-toolbar">
+        <input id="memberQ" placeholder="搜索姓名 / 手机号 / 分组" oninput="renderMemberAdmin()">
+        <select id="memberGroupFilter" onchange="renderMemberAdmin()">
+          <option value="">全部分组</option>
+          <option>市场一组</option>
+          <option>市场二组</option>
+          <option>市场三组</option>
+          <option>上海区</option>
+          <option>管理员</option>
+        </select>
+        <select id="memberRoleFilter" onchange="renderMemberAdmin()">
+          <option value="">全部角色</option>
+          <option value="member">成员</option>
+          <option value="admin">管理员</option>
+          <option value="superadmin">超级管理员</option>
+        </select>
+        <select id="memberStatusFilter" onchange="renderMemberAdmin()">
+          <option value="">全部状态</option>
+          <option value="approved">正常</option>
+          <option value="disabled">已停用</option>
+        </select>
+      </div>
+      <div id="memberTable"></div>
+    </div>
+  </section>
+  <section id="sensitiveModal" class="modal hidden">
+    <div class="dialog">
+      <div class="dialog-head">
+        <h3>敏感操作确认</h3>
+        <button class="ghost" onclick="cancelSensitiveAuth()">取消</button>
+      </div>
+      <div class="form">
+        <div class="wide"><label>当前密码</label><input id="sensitivePassword" type="password" placeholder="请输入当前密码"></div>
+        <div id="sensitiveErr" class="err wide"></div>
+        <div class="wide toolbar">
+          <button type="button" class="ghost" onclick="cancelSensitiveAuth()">取消</button>
+          <button type="button" onclick="confirmSensitiveAuth()">确认</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <section id="mediaModal" class="modal hidden">
+    <div class="dialog wide">
+      <div class="dialog-head"><h3 id="mediaTitle">预览</h3><button class="ghost" onclick="closeMedia()">关闭</button></div>
+      <div id="mediaStage" class="media-stage"></div>
+    </div>
+  </section>
+
+  <script>
+    let items = [];
+    let me = { role: '', name: '' };
+    let showDeleted = false;
+    let editingId = '';
+    let importFilePayload = null;
+    let savingItem = false;
+    let currentLogs = [];
+    let memberAdminUsers = [];
+    let smsCountdownTimer = null;
+    let sensitiveAuthResolver = null;
+    const statusActionLocks = new Set();
+    const expandedCards = new Set();
+    const $ = id => document.getElementById(id);
+    const RENTAL_MAP = [
+      ['oneYearFull', 'rqOneYearFull', '一年全包'],
+      ['twoYearFull', 'rqTwoYearFull', '两年全包'],
+      ['threeYearFull', 'rqThreeYearFull', '三年全包'],
+      ['oneYearMove', 'rqOneYearMove', '一年搬迁'],
+      ['twoYearMove', 'rqTwoYearMove', '两年搬迁'],
+      ['threeYearMove', 'rqThreeYearMove', '三年搬迁']
+    ];
+
+    ['date', 'category', 'scope', 'customer', 'sort', 'q'].forEach(id => $(id).addEventListener('input', render));
+
+    async function api(url, opt = {}) {
+      const r = await fetch(url, { headers: { 'content-type': 'application/json', ...(opt.headers || {}) }, ...opt });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({ error: r.statusText }))).error);
+      return r.json();
+    }
+
+    async function login() {
+      try {
+        await api('/api/login/sms/verify', { method: 'POST', body: JSON.stringify({ name: $('loginName').value, phone: $('loginPhone').value, code: $('smsCode').value }) });
+        await boot();
+      } catch (e) {
+        $('loginErr').textContent = e.message || '登录失败';
+      }
+    }
+    async function sendSmsCode() {
+      try {
+        $('loginErr').textContent = '';
+        await api('/api/login/sms/send', { method: 'POST', body: JSON.stringify({ name: $('loginName').value, phone: $('loginPhone').value }) });
+        let left = 60;
+        const buttons = Array.from(document.querySelectorAll('.sms-login-row button'));
+        const button = buttons[0];
+        clearInterval(smsCountdownTimer);
+        button.disabled = true;
+        button.textContent = `${left}s`;
+        smsCountdownTimer = setInterval(() => {
+          left -= 1;
+          if (left <= 0) {
+            clearInterval(smsCountdownTimer);
+            button.disabled = false;
+            button.textContent = '获取验证码';
+            return;
+          }
+          button.textContent = `${left}s`;
+        }, 1000);
+      } catch (e) {
+        $('loginErr').textContent = e.message || '验证码发送失败';
+      }
+    }
+
+    async function changePassword() {
+      try {
+        const oldPassword = $('oldPassword').value;
+        const newPassword = $('newPassword').value;
+        const newPassword2 = $('newPassword2').value;
+        if (newPassword !== newPassword2) throw new Error('两次新密码不一致');
+        await api('/api/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) });
+        $('passwordModal').classList.add('hidden');
+        await boot();
+      } catch (e) {
+        $('passwordErr').textContent = e.message || '修改密码失败';
+      }
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      location.reload();
+    }
+
+    async function boot() {
+      me = await api('/api/me');
+      if (!me.authenticated) return;
+      $('login').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      const adminRole = isAdminRole();
+      $('role').textContent = me.displayName || me.name;
+      $('deletedBtn').classList.toggle('hidden', !adminRole);
+      $('logsBtn').classList.toggle('hidden', !adminRole);
+      $('memberAdminBtn').classList.toggle('hidden', me.role !== 'superadmin');
+      if (me.mustChangePassword) {
+        $('passwordModal').classList.remove('hidden');
+        return;
+      }
+      await loadItems();
+      const es = new EventSource('/api/events');
+      es.onmessage = () => loadItems();
+    }
+    function isAdminRole() {
+      return me.role === 'admin' || me.role === 'superadmin';
+    }
+    async function requestSensitivePassword() {
+      return new Promise((resolve, reject) => {
+        sensitiveAuthResolver = { resolve, reject };
+        $('sensitivePassword').value = '';
+        $('sensitiveErr').textContent = '';
+        $('sensitiveModal').classList.remove('hidden');
+        setTimeout(() => $('sensitivePassword').focus(), 50);
+      });
+    }
+    function confirmSensitiveAuth() {
+      const password = $('sensitivePassword').value;
+      if (!password) {
+        $('sensitiveErr').textContent = '请输入当前密码';
+        return;
+      }
+      $('sensitiveModal').classList.add('hidden');
+      if (sensitiveAuthResolver) sensitiveAuthResolver.resolve(password);
+      sensitiveAuthResolver = null;
+    }
+    function cancelSensitiveAuth() {
+      $('sensitiveModal').classList.add('hidden');
+      if (sensitiveAuthResolver) sensitiveAuthResolver.reject(new Error('已取消操作'));
+      sensitiveAuthResolver = null;
+    }
+    async function sensitiveBody(payload = {}) {
+      if (!isAdminRole()) return payload;
+      const adminPassword = await requestSensitivePassword();
+      return { ...payload, adminPassword };
+    }
+
+    async function loadItems() {
+      const db = await api('/api/items' + (showDeleted ? '?includeDeleted=1' : ''));
+      items = db.items || [];
+      $('updated').textContent = '最近更新：' + new Date().toLocaleString('zh-CN', { hour12: false });
+      render();
+    }
+
+    function toggleDeleted() {
+      showDeleted = !showDeleted;
+      $('deletedBtn').textContent = showDeleted ? '隐藏已删除' : '查看已删除';
+      loadItems();
+    }
+
+    function numberFrom(value) {
+      const m = String(value || '').replace(/,/g, '').match(/\d+(?:\.\d+)?/g);
+      return m ? Math.max(...m.map(Number)) : 0;
+    }
+
+    function scopeName(v, side = 'supply') {
+      const noun = side === 'demand' ? '需求' : '货源';
+      return v === 'mine' ? `我的${noun}` : v === 'shared' ? '共享给我' : `公司${noun}`;
+    }
+
+    function syncScopeOptions(side = $('side')?.value || 'supply') {
+      const noun = side === 'demand' ? '需求' : '货源';
+      Array.from($('fScope').options).forEach(option => {
+        if (option.value === 'company') option.textContent = `公司${noun}`;
+        if (option.value === 'mine') option.textContent = `我的${noun}`;
+      });
+    }
+
+    function pricingSummary(item) {
+      const pricing = item.pricing || {};
+      const parts = [];
+      if (pricing.saleEnabled && pricing.salePrice) {
+        parts.push(`售卖 ${pricing.salePrice} ${saleUnitText(pricing)}`);
+      }
+      const rentalParts = RENTAL_MAP
+        .filter(([key]) => pricing.rentalQuotes && pricing.rentalQuotes[key])
+        .map(([key, , label]) => `${label} ${rentalValueText(pricing.rentalQuotes[key], pricing)}`);
+      if (pricing.rentalEnabled && rentalParts.length) parts.push('租赁 ' + rentalParts.join(' / '));
+      if (!parts.length && item.price) parts.push(item.price);
+      return parts.join('；');
+    }
+
+    function saleUnitText(pricing) {
+      const unit = pricing?.saleUnit || $('fSaleUnit')?.value || '万元/台';
+      if (['万元/台', '万元/片', '万元/条', '美金/台', '美金/片', '美金/条'].includes(unit)) return unit;
+      if (unit === 'cny_10k_piece') return '万元/片';
+      if (unit === 'cny_10k_strip') return '万元/条';
+      if (unit === 'usd') return '美金/台';
+      if (unit === 'usd_piece') return '美金/片';
+      if (unit === 'usd_strip') return '美金/条';
+      return '万元/台';
+    }
+
+    function rentalUnitText(pricing) {
+      const unit = pricing?.rentalUnit || $('fRentalUnit')?.value || '万/月/台';
+      if (['万/月/台', '万/月/片', '万/月/条', '美金/月/台', '美金/月/片', '美金/月/条'].includes(unit)) return unit;
+      const saleUnit = saleUnitText({ saleUnit: pricing?.saleUnit || unit });
+      if (saleUnit === '万元/片') return '万/月/片';
+      if (saleUnit === '万元/条') return '万/月/条';
+      if (saleUnit === '美金/台') return '美金/月/台';
+      if (saleUnit === '美金/片') return '美金/月/片';
+      if (saleUnit === '美金/条') return '美金/月/条';
+      return '万/月/台';
+    }
+
+    function rentalValueText(value, pricing) {
+      const raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/美金\/月\/(台|片|条)/.test(raw) || /美元\/月\/(台|片|条)/.test(raw)) return raw;
+      if (/美金\/月$/.test(raw) || /美元\/月$/.test(raw)) return raw + '/台';
+      if (/万\/月\/(台|片|条)/.test(raw)) return raw;
+      if (/万\/月$/.test(raw)) return raw + '/台';
+      if (/\/(台|片|条)$/.test(raw) || /(台|片|条)$/.test(raw)) return raw;
+      return raw + rentalUnitText(pricing);
+    }
+
+    function priceNumber(item) {
+      const pricing = item.pricing || {};
+      const values = [];
+      if (pricing.salePrice) values.push(numberFrom(pricing.salePrice));
+      RENTAL_MAP.forEach(([key]) => {
+        if (pricing.rentalQuotes && pricing.rentalQuotes[key]) values.push(numberFrom(pricing.rentalQuotes[key]));
+      });
+      if (!values.length) values.push(numberFrom(item.price));
+      return Math.max(...values, 0);
+    }
+
+    function filtered(side) {
+      const d = $('date').value;
+      const c = $('category').value;
+      const sc = $('scope').value;
+      const cu = $('customer').value;
+      const q = $('q').value.trim().toLowerCase();
+      let arr = items.filter(x => x.side === side);
+      if (!showDeleted) arr = arr.filter(x => !x.deleted && !['offline', 'sold', 'done'].includes(x.status) && x.offlineReviewStatus !== 'approved');
+      if (d) arr = arr.filter(x => x.createdAt.slice(0, 10) === d);
+      if (c) arr = arr.filter(x => x.category === c);
+      if (sc) arr = arr.filter(x => x.scope === sc);
+      if (cu) arr = arr.filter(x => x.customer === cu);
+      if (q) {
+        arr = arr.filter(x => [
+          x.category,
+          x.condition,
+          x.title,
+          x.quantity,
+          x.price,
+          pricingSummary(x),
+          x.person,
+          x.phone,
+          x.note,
+          Object.values(x.machineConfig || {}).join(' ')
+        ].join(' ').toLowerCase().includes(q));
+      }
+      const mode = $('sort').value;
+      arr.sort((a, b) => {
+        if (a.deleted !== b.deleted) return a.deleted ? 1 : -1;
+        if (mode === 'urgent') return (b.urgent - a.urgent) || new Date(b.updatedAt) - new Date(a.updatedAt);
+        if (mode === 'priceDesc') return priceNumber(b) - priceNumber(a) || new Date(b.updatedAt) - new Date(a.updatedAt);
+        if (mode === 'priceAsc') return priceNumber(a) - priceNumber(b) || new Date(b.updatedAt) - new Date(a.updatedAt);
+        if (mode === 'qtyDesc') return numberFrom(b.quantity) - numberFrom(a.quantity) || new Date(b.updatedAt) - new Date(a.updatedAt);
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      });
+      return arr;
+    }
+
+    function render() {
+      const supply = filtered('supply');
+      const demand = filtered('demand');
+      $('supplyCount').textContent = supply.length;
+      $('demandCount').textContent = demand.length;
+      $('supplyList').innerHTML = supply.length ? supply.map(card).join('') : '<div class="empty">暂无记录</div>';
+      $('demandList').innerHTML = demand.length ? demand.map(card).join('') : '<div class="empty">暂无记录</div>';
+    }
+
+    function pricingHtml(item) {
+      const pricing = item.pricing || {};
+      const blocks = [];
+      const saleTitle = item.side === 'demand' ? '求购' : '出售';
+      const rentalTitle = item.side === 'demand' ? '求租' : '租赁';
+      const rentalRows = RENTAL_MAP
+        .filter(([key]) => pricing.rentalQuotes && pricing.rentalQuotes[key])
+        .map(([key, , label]) => ({ label, value: rentalValueText(pricing.rentalQuotes[key], pricing) }));
+      if (pricing.saleEnabled && pricing.salePrice) {
+        blocks.push(`
+          <div class="price-section sale-section">
+            <div class="price-section-head">
+              <span class="price-section-title">${saleTitle}</span>
+            </div>
+            <div class="price-line sale-line">
+              <span class="price-value">${esc(pricing.salePrice)} ${saleUnitText(pricing)}</span>
+            </div>
+          </div>
+        `);
+      }
+      if (pricing.rentalEnabled && rentalRows.length) {
+        blocks.push(`
+          <div class="price-section rental-section">
+            <div class="price-section-head">
+              <span class="price-section-title">${rentalTitle}</span>
+              <span class="price-label rental">${rentalRows.length}档报价</span>
+            </div>
+            <div class="price-detail-list">
+              ${rentalRows.map(row => `<div class="price-detail-row"><span class="price-label rental">${row.label}</span><span class="price-value">${esc(row.value)}</span></div>`).join('')}
+            </div>
+          </div>
+        `);
+      }
+      if (!blocks.length) {
+        blocks.push(`<div class="price-section"><div class="price-line"><span class="price-value">${esc(item.price || '待补充')}</span></div></div>`);
+      }
+      return blocks.join('');
+    }
+
+    function cardSummaryText(x) {
+      const base = [x.category, x.condition, x.title].filter(Boolean).join('-');
+      return base.replace(/\s+/g, ' ').trim();
+    }
+
+    function businessStatusName(x) {
+      const supply = { on_sale: '在售', following: '跟进中', sold: '已完成', offline: '已下架' };
+      const demand = { pending: '待匹配', following: '跟进中', done: '已完成', offline: '已下架' };
+      return (x.side === 'demand' ? demand : supply)[x.status] || (x.side === 'demand' ? '待匹配' : '在售');
+    }
+
+    function reviewStatusTags(x) {
+      const tags = [`<span class="tag green">当前状态：${esc(businessStatusName(x))}</span>`];
+      const reviewMap = {
+        pending: ['待审核', 'gold'],
+        approved: ['审核通过', 'green'],
+        rejected: ['审核被拒绝', 'red']
+      };
+      if (x.completionReviewStatus && x.completionReviewStatus !== 'approved') {
+        const [label, cls] = reviewMap[x.completionReviewStatus] || [x.completionReviewStatus, ''];
+        tags.push(`<span class="tag ${cls}">完成${label}</span>`);
+      }
+      if (x.offlineReviewStatus) {
+        const [label, cls] = reviewMap[x.offlineReviewStatus] || [x.offlineReviewStatus, ''];
+        if (!['approved', 'rejected'].includes(x.offlineReviewStatus)) tags.push(`<span class="tag ${cls}">下架${label}</span>`);
+      }
+      if (x.status === 'following' && x.followOwnerName) {
+        tags.push(`<span class="tag blue">跟进人：${esc(x.followOwnerName)}</span>`);
+      }
+      return tags.join('');
+    }
+
+    function card(x) {
+      const media = mediaThumb(x);
+      const can = isAdminRole() || x.ownerName === me.name;
+      const cfg = configHtml(x);
+      const expanded = expandedCards.has(x.id);
+      const dualTag = x.pricing?.saleEnabled && x.pricing?.rentalEnabled ? '<span class="tag red">可租可售</span>' : '';
+      const customerTag = x.side === 'demand' ? `<span class="tag ${x.customer === '新客户' ? 'blue' : 'gold'}">${x.customer}</span>` : '';
+      const contactText = x.ownerName || x.person || '';
+      const cargoOwnerBox = x.side === 'supply' && x.cargoOwnerInfo ? `<div class="note-box"><strong>货主信息：</strong>${esc(x.cargoOwnerInfo)}</div>` : '';
+      return `
+        <article class="card ${expanded ? 'is-expanded' : 'is-collapsed'} ${x.urgent ? 'urgent' : ''} ${x.deleted ? 'deleted' : ''}">
+          <div class="mainline">
+            ${media}
+            <div class="card-main">
+              <div class="card-copy">
+                  <div class="title">${esc(x.category)} <span class="condition">${esc(x.condition)}</span> ${esc(x.title)}</div>
+                  <div class="meta">
+                    <span class="tag">数量 ${esc(x.quantity)}</span>
+                    <span class="tag green">${scopeName(x.scope, x.side)}</span>
+                    ${reviewStatusTags(x)}
+                    ${dualTag}
+                    <span class="tag">发布 ${esc(contactText || '未知')}</span>
+                    <span class="tag">${time(x.updatedAt || x.createdAt)}</span>
+                    ${customerTag}
+                    ${x.urgent ? '<span class="tag red">紧急</span>' : ''}
+                    ${x.deleted ? `<span class="tag red">已删 ${esc(x.deletedBy || '')}</span>` : ''}
+                  </div>
+                  ${cfg}
+                  ${cargoOwnerBox}
+                  <div class="note-box">${esc(x.note || '无备注')}</div>
+              </div>
+              <div class="price">${pricingHtml(x)}</div>
+            </div>
+            <div class="card-foot">
+              <button class="mini toggle-card ${expanded ? 'is-open' : ''}" onclick="toggleCard('${x.id}')">${expanded ? '收起' : '展开'}</button>
+              <button class="mini" onclick="copyItem('${x.id}')">复制</button>
+              ${can && !x.deleted ? `${x.status === 'following' && x.followOwnerName === me.name ? `<button class="mini" onclick="cancelFollowItem('${x.id}')">取消跟进</button>` : `<button class="mini" onclick="followItem('${x.id}')">跟进</button>`}<button class="mini" onclick="editItem('${x.id}')">修改</button><button class="mini danger" onclick="endItem('${x.id}')">结束/下架</button>` : ''}
+              ${isAdminRole() && x.deleted ? `<button class="mini restore" onclick="restoreItem('${x.id}')">恢复</button><button class="mini danger" onclick="purgeItem('${x.id}')">彻底删除</button>` : ''}
+            </div>
+          </div>
+        </article>`;
+    }
+    function toggleCard(id) {
+      if (expandedCards.has(id)) expandedCards.delete(id);
+      else expandedCards.add(id);
+      render();
+    }
+    function mediaThumb(x) {
+      const media = itemMedia(x);
+      if (!media.length) return '<div class="media-stack"><div class="thumb"></div></div>';
+      return `<div class="media-stack">${media.map((item, index) => item.type === 'video'
+        ? `<div class="thumb video-thumb clickable" onclick="openMedia('${x.id}',${index})" title="点击播放视频">视频</div>`
+        : `<img class="thumb clickable" src="${item.url}" onclick="openMedia('${x.id}',${index})" title="点击放大图片">`
+      ).join('')}</div>`;
+    }
+
+    function isLockedForBusinessAction(x) {
+      if (!x) return '条目不存在，请刷新后重试';
+      if (x.offlineReviewStatus === 'pending') return '该条目已有下架申请待审核，请等待管理员处理';
+      if (x.status === 'sold' || x.status === 'done') return '该条目已完成，不能重复操作';
+      if (x.deleted || x.status === 'offline' || x.offlineReviewStatus === 'approved') return '该条目已下架，不能重复操作';
+      return '';
+    }
+
+    function itemMedia(x) {
+      const rows = Array.isArray(x.media) ? x.media.slice() : [];
+      if (x.image) rows.push({ type: 'image', url: x.image });
+      if (x.video) rows.push({ type: 'video', url: x.video });
+      const seen = new Set();
+      return rows
+        .map(item => ({ type: item.type === 'video' ? 'video' : 'image', url: item.url || item.src || '' }))
+        .filter(item => item.url)
+        .filter(item => {
+          const key = item.type + ':' + item.url;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .slice(0, 3);
+    }
+
+    function configHtml(x) {
+      if (!['整机', '整机服务器'].includes(x.category)) return '';
+      const c = x.machineConfig || {};
+      const rows = [
+        ['GPU', c.gpu], ['CPU', c.cpu], ['内存', c.memory], ['系统盘', c.systemDisk],
+        ['数据盘', c.dataDisk], ['网卡1', c.nic1], ['网卡2', c.nic2], ['网卡3', c.nic3], ['网卡4', c.nic4], ['更多网卡', c.extraNics],
+        ['Raid卡', c.raid], ['电源', c.psu], ['PCIE交换芯片', c.pcieSwitch]
+      ].filter(r => r[1]);
+      return rows.length ? '<div class="config"><div class="config-title">配置</div>' + rows.map(r => `<span class="config-cell"><b>${r[0]}：</b><em>${esc(r[1])}</em></span>`).join('') + '</div>' : '';
+    }
+
+    function openForm(side) {
+      editingId = '';
+      $('formTitle').textContent = side === 'supply' ? '新增货源' : '新增需求';
+      $('itemForm').reset();
+      $('side').value = side;
+      $('fScope').value = 'company';
+      $('fPricingType').value = 'sale';
+      $('fSaleUnit').value = '万元/台';
+      syncScopeOptions(side);
+      syncRentalUnit();
+      syncPricingTypeLabels(side);
+      toggleCustomerField(side);
+      toggleCargoOwnerField(true);
+      toggleSharedField();
+      toggleMachineFields();
+      togglePricingFields();
+      $('modal').classList.remove('hidden');
+    }
+
+    function closeForm() { $('modal').classList.add('hidden'); }
+    function toggleCustomerField(side = $('side').value) {
+      const isSupply = side === 'supply';
+      $('customerField').classList.toggle('hidden', isSupply);
+      if (isSupply) $('fCustomer').value = '老客户';
+    }
+    function cargoOwnerRequired() {
+      return $('side').value === 'supply' && ['mine', 'shared'].includes($('fScope').value);
+    }
+    function toggleCargoOwnerField(canEdit = true) {
+      const visible = $('side').value === 'supply' && canEdit;
+      $('cargoOwnerField').classList.toggle('hidden', !visible);
+      $('fCargoOwnerInfo').required = visible && cargoOwnerRequired();
+      if (!visible) $('fCargoOwnerInfo').value = '';
+    }
+    function toggleSharedField() { $('sharedField').classList.toggle('hidden', $('fScope').value !== 'shared'); }
+    function onScopeChange() {
+      toggleSharedField();
+      toggleCargoOwnerField(!$('cargoOwnerField').classList.contains('hidden'));
+    }
+    function toggleMachineFields() { $('machineFields').classList.toggle('hidden', !['整机', '整机服务器'].includes($('fCategory').value)); }
+    function togglePricingFields() {
+      const mode = $('fPricingType').value;
+      $('saleBlock').classList.toggle('hidden', mode === 'rental');
+      $('rentalBlock').classList.toggle('hidden', mode === 'sale');
+    }
+    function syncRentalUnit() {
+      const map = {
+        '万元/台': '万/月/台',
+        '万元/片': '万/月/片',
+        '万元/条': '万/月/条',
+        '美金/台': '美金/月/台',
+        '美金/片': '美金/月/片',
+        '美金/条': '美金/月/条'
+      };
+      $('fRentalUnit').value = map[$('fSaleUnit').value] || '万/月/台';
+    }
+    function setSelectValue(selectId, value) {
+      const el = $(selectId);
+      const raw = String(value || '').trim();
+      if (raw && !Array.from(el.options).some(option => option.value === raw || option.textContent === raw)) {
+        el.add(new Option(raw, raw));
+      }
+      el.value = raw;
+    }
+    function syncPricingTypeLabels(side) {
+      const isSupply = side === 'supply';
+      const labels = isSupply
+        ? { sale: '出售', rental: '租赁', both: '出售和租赁' }
+        : { sale: '求购', rental: '求租', both: '购买或租赁' };
+      Array.from($('fPricingType').options).forEach(option => {
+        option.textContent = labels[option.value] || option.textContent;
+      });
+      $('saleBlock').querySelector('h4').textContent = isSupply ? '出售报价' : '求购报价';
+      $('saleBlock').querySelector('label').textContent = isSupply ? '出售价格' : '求购价格';
+    }
+
+    function machinePayload() {
+      return {
+        gpu: $('mcGpu').value,
+        cpu: $('mcCpu').value,
+        memory: $('mcMemory').value,
+        systemDisk: $('mcSystemDisk').value,
+        dataDisk: $('mcDataDisk').value,
+        nic1: $('mcNic1').value,
+        nic2: $('mcNic2').value,
+        nic3: $('mcNic3').value,
+        nic4: $('mcNic4').value,
+        extraNics: $('mcExtraNics').value,
+        raid: $('mcRaid').value,
+        psu: $('mcPsu').value,
+        pcieSwitch: $('mcPcieSwitch').value
+      };
+    }
+
+    function pricingPayload() {
+      const mode = $('fPricingType').value;
+      const rentalQuotes = {};
+      RENTAL_MAP.forEach(([key, id]) => { rentalQuotes[key] = $(id).value.trim(); });
+      const saleEnabled = mode === 'sale' || mode === 'both';
+      const rentalEnabled = mode === 'rental' || mode === 'both';
+      return {
+        saleEnabled,
+        salePrice: saleEnabled ? $('fSalePrice').value.trim() : '',
+        saleUnit: saleEnabled ? $('fSaleUnit').value : '',
+        rentalEnabled,
+        rentalQuotes,
+        rentalUnit: rentalEnabled ? $('fRentalUnit').value : ''
+      };
+    }
+
+    async function readMediaFiles(files) {
+      const selected = Array.from(files || []);
+      if (selected.length > 3) {
+        alert('图片/视频最多上传3个');
+        return null;
+      }
+      const media = [];
+      for (const file of selected) {
+        const url = await readMedia(file);
+        if (!url) continue;
+        media.push({ type: file.type.startsWith('video/') ? 'video' : 'image', url });
+      }
+      return media;
+    }
+
+    async function saveItem(e) {
+      e.preventDefault();
+      if (savingItem) return;
+      savingItem = true;
+      const btn = $('saveBtn');
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '保存中...';
+      try {
+        if (editingId) {
+          const current = items.find(x => x.id === editingId);
+          const lockMessage = isLockedForBusinessAction(current);
+          if (lockMessage) {
+            alert(lockMessage);
+            return;
+          }
+        }
+        const media = await readMediaFiles($('fMedia').files);
+        if (media === null) return;
+        if (!$('cargoOwnerField').classList.contains('hidden') && cargoOwnerRequired() && !$('fCargoOwnerInfo').value.trim()) {
+          alert('请补充填写货主信息');
+          return;
+        }
+        const payload = {
+          side: $('side').value,
+          category: $('fCategory').value,
+          condition: $('fCondition').value,
+          title: $('fTitle').value,
+          quantity: $('fQuantity').value,
+          pricing: pricingPayload(),
+          person: $('fPerson').value,
+          phone: $('fPhone').value,
+          cargoOwnerInfo: $('cargoOwnerField').classList.contains('hidden') ? undefined : $('fCargoOwnerInfo').value,
+          customer: $('side').value === 'demand' ? $('fCustomer').value : '老客户',
+          urgent: $('fUrgent').checked,
+          note: $('fNote').value,
+          scope: $('fScope').value,
+          sharedTo: $('fSharedTo').value,
+          machineConfig: machinePayload()
+        };
+        if (!editingId || media.length) {
+          payload.media = media;
+          const firstImage = media.find(item => item.type === 'image');
+          const firstVideo = media.find(item => item.type === 'video');
+          payload.image = firstImage ? firstImage.url : '';
+          payload.video = firstVideo ? firstVideo.url : '';
+        }
+        await api(editingId ? '/api/items/' + editingId : '/api/items', { method: editingId ? 'PUT' : 'POST', body: JSON.stringify(payload) });
+        closeForm();
+        await loadItems();
+      } finally {
+        savingItem = false;
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    }
+
+    function applyPricingToForm(item) {
+      const pricing = item.pricing || {};
+      const hasSale = !!(pricing.saleEnabled && pricing.salePrice);
+      const hasRental = !!(pricing.rentalEnabled && RENTAL_MAP.some(([key]) => pricing.rentalQuotes && pricing.rentalQuotes[key]));
+      $('fPricingType').value = hasSale && hasRental ? 'both' : hasRental ? 'rental' : 'sale';
+      $('fSalePrice').value = pricing.salePrice || '';
+      $('fSaleUnit').value = saleUnitText(pricing);
+      $('fRentalUnit').value = rentalUnitText(pricing);
+      RENTAL_MAP.forEach(([key, id]) => { $(id).value = pricing.rentalQuotes?.[key] || ''; });
+      togglePricingFields();
+    }
+
+    function editItem(id) {
+      const x = items.find(v => v.id === id);
+      if (!x) return;
+      editingId = id;
+      $('formTitle').textContent = '修改信息';
+      $('side').value = x.side;
+      syncScopeOptions(x.side);
+      syncPricingTypeLabels(x.side);
+      toggleCustomerField(x.side);
+      setSelectValue('fCategory', x.category);
+      setSelectValue('fCondition', x.condition);
+      $('fTitle').value = x.title;
+      $('fQuantity').value = x.quantity;
+      $('fPerson').value = x.person;
+      $('fPhone').value = x.phone;
+      $('fCargoOwnerInfo').value = x.cargoOwnerInfo || '';
+      $('fCustomer').value = x.customer;
+      $('fUrgent').checked = !!x.urgent;
+      $('fNote').value = x.note || '';
+      $('fScope').value = x.scope || 'company';
+      $('fSharedTo').value = (x.sharedTo || []).join(',');
+      applyPricingToForm(x);
+      toggleCargoOwnerField(x.cargoOwnerInfoVisible !== false);
+      const c = x.machineConfig || {};
+      $('mcGpu').value = c.gpu || '';
+      $('mcCpu').value = c.cpu || '';
+      $('mcMemory').value = c.memory || '';
+      $('mcSystemDisk').value = c.systemDisk || '';
+      $('mcDataDisk').value = c.dataDisk || '';
+      $('mcNic1').value = c.nic1 || '';
+      $('mcNic2').value = c.nic2 || '';
+      $('mcNic3').value = c.nic3 || '';
+      $('mcNic4').value = c.nic4 || '';
+      $('mcExtraNics').value = c.extraNics || '';
+      $('mcRaid').value = c.raid || '';
+      $('mcPsu').value = c.psu || '';
+      $('mcPcieSwitch').value = c.pcieSwitch || '';
+      toggleSharedField();
+      toggleMachineFields();
+      $('modal').classList.remove('hidden');
+    }
+
+    function readMedia(file) {
+      return new Promise(res => {
+        if (!file) return res('');
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.readAsDataURL(file);
+      });
+    }
+    function openMedia(id, indexOrType) {
+      const x = items.find(v => v.id === id);
+      if (!x) return;
+      const media = itemMedia(x);
+      const item = typeof indexOrType === 'number'
+        ? media[indexOrType]
+        : (indexOrType === 'video' ? { type: 'video', url: x.video } : { type: 'image', url: x.image });
+      if (!item || !item.url) return;
+      $('mediaTitle').textContent = `${x.category || ''} ${x.title || ''}`.trim() || '预览';
+      $('mediaStage').innerHTML = item.type === 'video'
+        ? `<video src="${item.url}" controls autoplay></video>`
+        : `<img src="${item.url}" alt="图片预览">`;
+      $('mediaModal').classList.remove('hidden');
+    }
+    function closeMedia() {
+      $('mediaStage').innerHTML = '';
+      $('mediaModal').classList.add('hidden');
+    }
+
+    async function followItem(id) {
+      if (statusActionLocks.has(id)) return;
+      const x = items.find(v => v.id === id);
+      const lockMessage = isLockedForBusinessAction(x);
+      if (lockMessage) return alert(lockMessage);
+      if (x.status === 'following' && x.followOwnerName && x.followOwnerName !== me.name) {
+        return alert('该条目已由' + x.followOwnerName + '跟进，不能重复跟进');
+      }
+      statusActionLocks.add(id);
+      try {
+        await api('/api/items/' + id + '/status', { method: 'POST', body: JSON.stringify({ action: 'follow' }) });
+        await loadItems();
+      } finally {
+        statusActionLocks.delete(id);
+      }
+    }
+
+    async function cancelFollowItem(id) {
+      if (statusActionLocks.has(id)) return;
+      const x = items.find(v => v.id === id);
+      if (!x || x.status !== 'following') return alert('该条目不在跟进中');
+      if (x.followOwnerName && x.followOwnerName !== me.name) return alert('只能由当前跟进人取消跟进');
+      if (!confirm('确认取消跟进？')) return;
+      statusActionLocks.add(id);
+      try {
+        await api('/api/items/' + id + '/status', { method: 'POST', body: JSON.stringify({ action: 'cancel_follow' }) });
+        await loadItems();
+      } finally {
+        statusActionLocks.delete(id);
+      }
+    }
+
+    async function endItem(id) {
+      if (statusActionLocks.has(id)) return;
+      const x = items.find(v => v.id === id);
+      if (!x) return;
+      const lockMessage = isLockedForBusinessAction(x);
+      if (lockMessage) return alert(lockMessage);
+      const choice = prompt('请选择处理类型：\n1. 业务已完成\n2. 下架/暂不处理\n\n请输入 1 或 2');
+      if (!choice) return;
+      statusActionLocks.add(id);
+      try {
+        if (choice.trim() === '1') {
+          const reason = prompt('请输入完成说明（可选）：', '') || '';
+          await api('/api/items/' + id + '/status', { method: 'POST', body: JSON.stringify({ action: 'complete', reason }) });
+          alert('已标记业务完成');
+          await loadItems();
+          return;
+        }
+        if (choice.trim() === '2') {
+          const reason = prompt('请输入下架原因：', '');
+          if (!reason || !reason.trim()) return alert('请填写下架原因');
+          await api('/api/items/' + id + '/status', { method: 'POST', body: JSON.stringify({ action: 'offline', reason }) });
+          alert('已提交下架审核申请，请在小程序端完成审批');
+          await loadItems();
+          return;
+        }
+        alert('请选择 1 或 2');
+      } finally {
+        statusActionLocks.delete(id);
+      }
+    }
+
+    async function restoreItem(id) {
+      await api('/api/items/' + id + '/restore', { method: 'POST', body: JSON.stringify(await sensitiveBody()) });
+      await loadItems();
+    }
+
+    async function purgeItem(id) {
+      if (confirm('确认彻底删除？此操作不可恢复。')) {
+        await api('/api/items/' + id + '/permanent', { method: 'DELETE', body: JSON.stringify(await sensitiveBody()) });
+        await loadItems();
+      }
+    }
+
+    function configLines(x) {
+      if (!['整机', '整机服务器'].includes(x.category)) return '';
+      const c = x.machineConfig || {};
+      const rows = [
+        ['GPU', c.gpu], ['CPU', c.cpu], ['内存', c.memory], ['系统盘', c.systemDisk],
+        ['数据盘', c.dataDisk], ['网卡1', c.nic1], ['网卡2', c.nic2], ['网卡3', c.nic3], ['网卡4', c.nic4], ['更多网卡', c.extraNics],
+        ['Raid卡', c.raid], ['电源', c.psu], ['PCIE交换芯片', c.pcieSwitch]
+      ].filter(r => r[1]);
+      return rows.length ? '配置：\n' + rows.map(r => r[0] + '：' + r[1]).join('\n') : '';
+    }
+
+    function copyItem(id) {
+      const x = items.find(v => v.id === id);
+      const config = configLines(x);
+      const header = `${x.side === 'supply' ? '【货源】' : '【需求】'} ${cardSummaryText(x)}`;
+      const text = [
+        header,
+        `数量：${x.quantity}`,
+        `报价：${pricingSummary(x) || x.price || '待补充'}`,
+        config,
+        `联系人：${x.person} ${x.phone}`,
+        `备注：${x.note || '无'}`
+      ].filter(Boolean).join('\n');
+      navigator.clipboard.writeText(text).then(() => alert('已复制'));
+    }
+
+    function openImport() {
+      $('importText').value = '';
+      $('importFile').value = '';
+      importFilePayload = null;
+      $('importModal').classList.remove('hidden');
+    }
+
+    function closeImport() { $('importModal').classList.add('hidden'); }
+
+    function loadImportFile() {
+      const f = $('importFile').files[0];
+      if (!f) return;
+      importFilePayload = null;
+      const r = new FileReader();
+      if (/\.xlsx$/i.test(f.name)) {
+        r.onload = () => {
+          importFilePayload = { fileName: f.name, fileData: r.result };
+          $('importText').value = '已选择 Excel 文件：' + f.name + '\n点击“确认导入”后，系统会读取第一个工作表。';
+        };
+        r.readAsDataURL(f);
+      } else if (/\.xls$/i.test(f.name)) {
+        $('importText').value = '当前不支持老式 .xls 文件，请在 Excel/WPS 中另存为 .xlsx 或 CSV 后再导入。';
+      } else {
+        r.onload = () => { $('importText').value = decodeCsvBuffer(r.result); };
+        r.readAsArrayBuffer(f);
+      }
+    }
+
+    function decodeCsvBuffer(buffer) {
+      const bytes = new Uint8Array(buffer);
+      if (bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) {
+        return new TextDecoder('utf-8').decode(bytes);
+      }
+      try {
+        return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+      } catch (e) {
+        try {
+          return new TextDecoder('gb18030').decode(bytes);
+        } catch (err) {
+          return new TextDecoder('gbk').decode(bytes);
+        }
+      }
+    }
+
+    async function importCsv() {
+      const csv = $('importText').value.trim();
+      if (!csv && !importFilePayload) return alert('请上传 CSV/XLSX 文件或粘贴 CSV 内容');
+      const payload = { side: $('importSide').value, csv };
+      if (importFilePayload) Object.assign(payload, importFilePayload);
+      const res = await api('/api/import', { method: 'POST', body: JSON.stringify(payload) });
+      closeImport();
+      await loadItems();
+      alert('已导入 ' + res.count + ' 条记录');
+    }
+
+    function downloadTemplate() {
+      window.location.href = '/api/template';
+    }
+
+    function exportCsv() {
+      window.location.href = '/api/export' + (showDeleted && isAdminRole() ? '?includeDeleted=1' : '');
+    }
+
+    async function openLogs() {
+      const db = await api('/api/logs');
+      currentLogs = db.logs || [];
+      $('logsCount').textContent = currentLogs.length ? `最近 ${currentLogs.length} 条操作日志` : '';
+      $('logsList').innerHTML = currentLogs.length
+        ? `<div class="logs-table-wrap"><table class="logs-table"><thead><tr>${LOG_EXPORT_HEADER.map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${currentLogs.map(logTableRow).join('')}</tbody></table></div>`
+        : '暂无日志';
+      $('logsModal').classList.remove('hidden');
+    }
+
+    const LOG_EXPORT_HEADER = ['时间', '操作人', '对象类型', '对象名称', '操作类型', '状态变化', '备注', '关联编号'];
+
+    function logObject(log) {
+      return log.after || log.before || {};
+    }
+    function logObjectType(log) {
+      const item = logObject(log);
+      if (item.side === 'demand') return '需求';
+      if (item.side === 'supply') return '货源';
+      if (/user_/.test(log.action || '')) return '账号';
+      return item.side || '';
+    }
+    function logObjectName(log) {
+      const item = logObject(log);
+      return item.title || item.summaryTitle || log.note || log.itemId || '';
+    }
+    function statusLabel(value) {
+      const map = { on_sale: '在售', following: '跟进中', sold: '已完成', done: '已完成', offline: '已下架', pending: '待处理', approved: '已通过', rejected: '已拒绝', auto: '自动通过' };
+      return map[value] || value || '';
+    }
+    function logStatusChange(log) {
+      const before = statusLabel(log.before && (log.before.status || log.before.reviewStatus || log.before.offlineReviewStatus || log.before.completionReviewStatus));
+      const after = statusLabel(log.after && (log.after.status || log.after.reviewStatus || log.after.offlineReviewStatus || log.after.completionReviewStatus));
+      if (before && after && before !== after) return `${before} -> ${after}`;
+      return after || before || '';
+    }
+    function logExportRow(log) {
+      return [
+        log.at ? new Date(log.at).toLocaleString('zh-CN', { hour12: false }) : '',
+        log.actorName || '',
+        logObjectType(log),
+        logObjectName(log),
+        actionName(log.action),
+        logStatusChange(log),
+        log.note || '',
+        log.itemId || ''
+      ];
+    }
+    function logTableRow(log) {
+      return `<tr>${logExportRow(log).map((cell, index) => `<td class="${index === 0 || index === 1 || index === 2 || index === 4 ? 'nowrap' : ''}${cell ? '' : ' muted-cell'}">${esc(cell || '-')}</td>`).join('')}</tr>`;
+    }
+    function csvCell(value) {
+      const s = String(value ?? '');
+      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+    function downloadText(filename, content, type = 'text/csv;charset=utf-8') {
+      const blob = new Blob(['\uFEFF' + content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+    function exportLogsTable() {
+      if (!currentLogs.length) return alert('暂无可导出的操作日志');
+      const rows = [LOG_EXPORT_HEADER, ...currentLogs.map(logExportRow)];
+      const csv = rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+      downloadText('润六尺操作日志-' + new Date().toISOString().slice(0, 10) + '.csv', csv);
+    }
+
+    function closeLogs() { $('logsModal').classList.add('hidden'); }
+    async function openMemberAdmin() {
+      const db = await api('/api/admin/users');
+      memberAdminUsers = db.users || [];
+      renderMemberAdmin();
+      $('memberAdminModal').classList.remove('hidden');
+    }
+    function closeMemberAdmin() { $('memberAdminModal').classList.add('hidden'); }
+    function memberRoleName(role) {
+      return role === 'superadmin' ? '超级管理员' : role === 'admin' ? '管理员' : '成员';
+    }
+    function memberStatusName(status) {
+      return { approved: '正常', disabled: '已停用' }[status] || status;
+    }
+    function memberManagedUsers() {
+      return memberAdminUsers.filter(user => user.status === 'approved' || user.status === 'disabled');
+    }
+    function getMemberRows() {
+      const q = String($('memberQ').value || '').trim().toLowerCase();
+      const group = $('memberGroupFilter').value;
+      const role = $('memberRoleFilter').value;
+      const status = $('memberStatusFilter').value;
+      return memberManagedUsers().filter(user => {
+        if (group && user.group !== group) return false;
+        if (role && user.role !== role) return false;
+        if (status && user.status !== status) return false;
+        if (q) {
+          const source = [user.name, user.phone, user.group, memberRoleName(user.role), memberStatusName(user.status)].join(' ').toLowerCase();
+          if (!source.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+    function renderMemberAdmin() {
+      const managed = memberManagedUsers();
+      $('memberTotal').textContent = managed.length;
+      $('memberAdminCount').textContent = managed.filter(user => user.role === 'admin' || user.role === 'superadmin').length;
+      $('memberDisabledCount').textContent = managed.filter(user => user.status === 'disabled').length;
+      const rows = getMemberRows();
+      $('memberAddArea').innerHTML = memberAddStrip();
+      $('memberTable').innerHTML = `
+        <div class="member-table-wrap">
+          <table class="member-table">
+            <thead>
+              <tr><th>姓名</th><th>手机号</th><th>分组</th><th>角色</th><th>状态</th><th>最近登录</th><th>操作</th></tr>
+            </thead>
+            <tbody>${rows.length ? rows.map(memberRow).join('') : '<tr><td colspan="7" class="empty">暂无匹配成员</td></tr>'}</tbody>
+          </table>
+        </div>`;
+    }
+    function memberGroupOptions(current = '市场一组') {
+      return ['市场一组', '市场二组', '市场三组', '上海区', '管理员'].map(group => `<option ${group === current ? 'selected' : ''}>${group}</option>`).join('');
+    }
+    function memberRoleOptions(current = 'member') {
+      return ['member', 'admin', 'superadmin'].map(role => `<option value="${role}" ${role === current ? 'selected' : ''}>${memberRoleName(role)}</option>`).join('');
+    }
+    function memberAddStrip() {
+      return `<div class="member-add-strip">
+        <div class="member-add-label">新增成员</div>
+        <input id="memberName" placeholder="新增姓名">
+        <input id="memberPhone" placeholder="手机号">
+        <select id="memberGroup">${memberGroupOptions()}</select>
+        <select id="memberRoleEdit">${memberRoleOptions()}</select>
+        <button class="primary" onclick="addMemberAdmin()">新增</button>
+      </div>`;
+    }
+    function memberRow(user) {
+      const canDisable = user.role !== 'superadmin';
+      const groupOptions = memberGroupOptions(user.group);
+      const roleOptions = memberRoleOptions(user.role);
+      return `<tr>
+        <td><strong>${esc(user.name)}</strong></td>
+        <td>${esc(user.phone)}</td>
+        <td><select onchange="updateMemberAdmin('${user.id}', 'group', this.value)">${groupOptions}</select></td>
+        <td><select onchange="updateMemberAdmin('${user.id}', 'role', this.value)">${roleOptions}</select></td>
+        <td><span class="member-status ${user.status}">${memberStatusName(user.status)}</span></td>
+        <td>${esc(user.lastLogin || '-')}</td>
+        <td>
+          <div class="member-row-actions">
+            ${canDisable ? (user.status === 'disabled'
+              ? `<button class="mini restore" onclick="restoreMemberAdmin('${user.id}')">恢复</button>`
+              : `<button class="mini danger" onclick="disableMemberAdmin('${user.id}')">停用</button>`) : ''}
+          </div>
+        </td>
+      </tr>`;
+    }
+    async function addMemberAdmin() {
+      const name = $('memberName').value.trim();
+      const phone = $('memberPhone').value.trim();
+      if (!name || !phone) return alert('请填写姓名和手机号');
+      try {
+        const res = await api('/api/admin/users', {
+          method: 'POST',
+          body: JSON.stringify(await sensitiveBody({ name, phone, group: $('memberGroup').value, role: $('memberRoleEdit').value }))
+        });
+        alert(`${res.user.name} 已新增，可使用姓名、手机号和短信验证码登录。`);
+        await openMemberAdmin();
+      } catch (e) {
+        alert(e.message || '新增成员失败');
+      }
+    }
+    async function updateMemberAdmin(id, field, value) {
+      const user = memberAdminUsers.find(item => item.id === id);
+      if (!user) return;
+      try {
+        await api('/api/admin/users/' + encodeURIComponent(id), {
+          method: 'PUT',
+          body: JSON.stringify(await sensitiveBody({ group: field === 'group' ? value : user.group, role: field === 'role' ? value : user.role }))
+        });
+        await openMemberAdmin();
+      } catch (e) {
+        alert(e.message || '调整成员失败');
+        await openMemberAdmin();
+      }
+    }
+    async function disableMemberAdmin(id) {
+      if (!confirm('确认停用这个成员？停用后该账号不能继续登录。')) return;
+      try {
+        await api('/api/admin/users/' + encodeURIComponent(id) + '/disable', { method: 'POST', body: JSON.stringify(await sensitiveBody()) });
+        await openMemberAdmin();
+      } catch (e) {
+        alert(e.message || '停用失败');
+      }
+    }
+    async function restoreMemberAdmin(id) {
+      try {
+        await api('/api/admin/users/' + encodeURIComponent(id) + '/restore', { method: 'POST', body: JSON.stringify(await sensitiveBody()) });
+        await openMemberAdmin();
+      } catch (e) {
+        alert(e.message || '恢复失败');
+      }
+    }
+    function exportMemberAdmin() {
+      const header = ['姓名', '手机号', '分组', '角色', '状态', '最近登录'];
+      const rows = getMemberRows().map(user => [user.name, user.phone, user.group, memberRoleName(user.role), memberStatusName(user.status), user.lastLogin || '-']);
+      const csv = [header, ...rows].map(row => row.map(csvCell).join(',')).join('\n') + '\n';
+      downloadText('润六尺成员名单-' + new Date().toISOString().slice(0, 10) + '.csv', csv);
+    }
+    function actionName(a) { return { create: '新增', update: '修改', status: '状态变更', mini_status: '小程序状态变更', delete: '删除', restore: '恢复', purge: '彻底删除', import: '导入', user_approve: '通过账号', user_reject: '拒绝账号', user_create: '新增成员', user_update: '调整成员', user_disable: '停用成员', user_restore: '恢复成员', user_reset_password: '重置密码' }[a] || a; }
+    function time(s) { return new Date(s).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); }
+    function esc(s) { return String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
+
+    boot().catch(() => {});
+  </script>
+</body>
+</html>

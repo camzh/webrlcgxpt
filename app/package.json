@@ -1,0 +1,13 @@
+{
+  "name": "rlcgxpt-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runliuchi supply-demand web app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "tencentcloud-sdk-nodejs": "^4.1.253"
+  }
+}

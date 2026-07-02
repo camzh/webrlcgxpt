@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
 const { URL } = require('url');
+const { appendMiniMediaSignature, hasValidMiniMediaSignature } = require('../lib/mini-media-signing');
 
 const PORT = Number(process.env.PORT || 3000);
 function requireEnv(name) {
@@ -56,6 +57,7 @@ const LOGIN_MAX_FAILS = 5;
 const MINI_BOOTSTRAP_ENABLED = process.env.JUZHEN_ENABLE_MINI_BOOTSTRAP === 'true';
 const SENSITIVE_ACTION_MAX_AGE_MS = 10 * 60 * 1000;
 const MINI_SESSION_SECRET = process.env.JUZHEN_MINI_SESSION_SECRET || MINI_PROGRAM_TOKEN;
+const MINI_MEDIA_SIGNING_SECRET = process.env.JUZHEN_MEDIA_SIGNING_SECRET || MINI_SESSION_SECRET;
 const ALLOW_LEGACY_MINI_TOKEN = process.env.JUZHEN_ALLOW_LEGACY_MINI_TOKEN !== 'false';
 const SMS_CODE_TTL_MINUTES = Number(process.env.SMS_CODE_TTL_MINUTES || 5);
 const SMS_SEND_INTERVAL_SECONDS = Number(process.env.SMS_SEND_INTERVAL_SECONDS || 60);
@@ -1805,6 +1807,7 @@ function miniItem(item, actor = null) {
   const priceLabel = side === 'demand'
     ? { sale: '求购', rental: '求租' }
     : { sale: '出售', rental: '租赁' };
+  const signMiniMediaUrl = value => appendMiniMediaSignature(value, MINI_MEDIA_SIGNING_SECRET);
   return {
     id: item.id || '',
     side,
@@ -1826,9 +1829,9 @@ function miniItem(item, actor = null) {
     customer: item.customer === '新客户' ? '新客户' : '老客户',
     urgent: Boolean(item.urgent),
     note: item.note || '',
-    image: media.find(row => row.type === 'image')?.url || item.image || '',
-    video: media.find(row => row.type === 'video')?.url || item.video || '',
-    media,
+    image: signMiniMediaUrl(media.find(row => row.type === 'image')?.url || item.image || ''),
+    video: signMiniMediaUrl(media.find(row => row.type === 'video')?.url || item.video || ''),
+    media: media.map(row => ({ ...row, url: signMiniMediaUrl(row.url) })),
     scope,
     sharedTo: Array.isArray(item.sharedTo) ? item.sharedTo : [],
     ownerName: item.ownerName || '',
@@ -1898,6 +1901,16 @@ function servePublicFile(req, res, url) {
   res.writeHead(200, { 'content-type': types[ext] || 'application/octet-stream', 'cache-control': 'public, max-age=31536000' });
   fs.createReadStream(filePath).pipe(res);
 }
+function canServeUploadMedia(req, res, url) {
+  const session = getSession(req);
+  if (session) {
+    if (!requireAuth(req, res)) return false;
+    return true;
+  }
+  if (hasValidMiniMediaSignature(url, MINI_MEDIA_SIGNING_SECRET)) return true;
+  send(res, 401, { error: 'unauthorized' });
+  return false;
+}
 async function saveMiniUpload(req, res, url, kind) {
   const db = readDb();
   if (!requireMiniAuth(req, res, url, db, { allowLegacy: true })) return;
@@ -1931,7 +1944,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === 'GET' && url.pathname.startsWith('/uploads/')) {
-      if (!requireAuth(req, res)) return;
+      if (!canServeUploadMedia(req, res, url)) return;
       return servePublicFile(req, res, url);
     }
     if (req.method === 'GET' && url.pathname === '/') {

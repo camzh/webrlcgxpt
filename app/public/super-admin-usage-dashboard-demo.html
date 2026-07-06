@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>超级管理员使用情况看板演示</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-soft: #f8fbfd;
+      --ink: #172636;
+      --muted: #66788a;
+      --line: #d9e3ea;
+      --blue: #1c6fb8;
+      --cyan: #0c91a2;
+      --green: #168267;
+      --amber: #bd7a12;
+      --red: #c74856;
+      --violet: #7762b8;
+      --shadow: 0 14px 34px rgba(35, 61, 84, .09);
+      --radius: 8px;
+      --font: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: var(--font);
+      color: var(--ink);
+      background: var(--bg);
+      font-size: 14px;
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 232px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      background: #102233;
+      color: #dfe9f1;
+      padding: 18px 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(255,255,255,.12);
+      margin-bottom: 14px;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: #e8f4ff;
+      color: #12314d;
+      font-weight: 900;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .brand span {
+      display: block;
+      color: #aab9c7;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav-title {
+      color: #8ca3b8;
+      font-size: 12px;
+      margin: 18px 0 8px;
+      font-weight: 700;
+    }
+
+    .nav-item {
+      height: 38px;
+      border-radius: var(--radius);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 10px;
+      color: #d8e4ec;
+      margin-bottom: 5px;
+    }
+
+    .nav-item.active {
+      background: #eaf4ff;
+      color: #0f3150;
+      font-weight: 800;
+    }
+
+    .nav-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: .75;
+    }
+
+    main {
+      min-width: 0;
+      padding: 18px;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.16;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      max-width: 780px;
+      line-height: 1.55;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      height: 36px;
+      border-radius: var(--radius);
+      padding: 0 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      background: #1c6fb8;
+      border-color: #1c6fb8;
+      color: #fff;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 150px 150px 150px 150px minmax(260px, 1fr);
+      gap: 10px;
+      padding: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .field label,
+    .metric-switch strong {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+      font-weight: 800;
+    }
+
+    select {
+      width: 100%;
+      height: 36px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 0 9px;
+      color: var(--ink);
+    }
+
+    .metric-options {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      padding: 5px 9px;
+      font-size: 12px;
+      color: #315064;
+      font-weight: 700;
+    }
+
+    .chip input { margin: 0; }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      min-width: 0;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent, var(--blue));
+    }
+
+    .kpi-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .kpi-value {
+      font-size: 29px;
+      font-weight: 900;
+      margin-top: 8px;
+      letter-spacing: 0;
+    }
+
+    .kpi-foot {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .delta.up { color: var(--green); font-weight: 800; }
+    .delta.down { color: var(--red); font-weight: 800; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, .9fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .panel-head {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title h2 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .panel-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .segmented {
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      flex: 0 0 auto;
+    }
+
+    .segmented button {
+      height: 31px;
+      border: 0;
+      background: #fff;
+      padding: 0 10px;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+    }
+
+    .segmented button.active {
+      background: #12314d;
+      color: #fff;
+    }
+
+    .panel-body {
+      padding: 14px;
+    }
+
+    .chart-card {
+      min-height: 330px;
+    }
+
+    .bars {
+      height: 270px;
+      display: grid;
+      grid-template-columns: 46px repeat(6, minmax(42px, 1fr));
+      gap: 8px;
+      align-items: end;
+      padding-top: 8px;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+
+    .axis-label {
+      align-self: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: right;
+      padding-right: 5px;
+    }
+
+    .bar-column {
+      height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 3px;
+      align-items: stretch;
+      min-width: 0;
+    }
+
+    .bar-stack {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 2px;
+      height: 220px;
+    }
+
+    .bar-piece {
+      min-height: 3px;
+      border-radius: 5px 5px 2px 2px;
+      transition: height .2s ease;
+      opacity: .92;
+    }
+
+    .bar-label {
+      height: 18px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+      gap: 14px;
+      align-items: center;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      min-height: 230px;
+    }
+
+    .donut {
+      width: 210px;
+      height: 210px;
+      border-radius: 50%;
+      background: conic-gradient(var(--blue) 0 40%, var(--cyan) 40% 65%, var(--amber) 65% 80%, var(--green) 80% 91%, var(--violet) 91% 100%);
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .donut::after {
+      content: "";
+      position: absolute;
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .donut-center {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .donut-center strong {
+      display: block;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .donut-center span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .rank-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .rank-item {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: var(--surface-soft);
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .rank-no {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #e5edf5;
+      color: #24455d;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .rank-name {
+      min-width: 0;
+      font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .rank-score {
+      color: var(--green);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .progress {
+      height: 8px;
+      background: #e5edf5;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .table th,
+    .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 6px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .table th:first-child,
+    .table td:first-child {
+      text-align: left;
+      white-space: normal;
+    }
+
+    .table th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .people-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(310px, .9fr);
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .people-table {
+      overflow-x: auto;
+    }
+
+    .person {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 132px;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: #e6f3f8;
+      color: #15536a;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .heat-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 7px;
+    }
+
+    .heat-cell {
+      min-height: 58px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #eef4f7;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .heat-cell strong {
+      font-size: 17px;
+    }
+
+    .heat-cell.high { background: #dff4ef; border-color: #a8ddd1; }
+    .heat-cell.mid { background: #e2f1fb; border-color: #b7daf1; }
+    .heat-cell.low { background: #fff4de; border-color: #ead49d; }
+
+    .feed {
+      display: grid;
+      gap: 10px;
+      max-height: 330px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .feed-item {
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .feed-time {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .feed-main strong {
+      display: block;
+      line-height: 1.35;
+    }
+
+    .feed-main span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .plan {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .plan-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      min-width: 0;
+      box-shadow: var(--shadow);
+    }
+
+    .plan-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .plan-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .page { grid-template-columns: 1fr; }
+      .sidebar {
+        position: static;
+        height: auto;
+        display: grid;
+        grid-template-columns: minmax(190px, 250px) 1fr;
+        gap: 12px;
+      }
+      .side-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-content: start;
+      }
+      .nav-title { display: none; }
+      .nav-item { margin: 0; }
+      .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .metric-switch { grid-column: 1 / -1; }
+      .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid, .people-grid { grid-template-columns: 1fr; }
+      .plan { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      main { padding: 12px; }
+      .sidebar { grid-template-columns: 1fr; }
+      .header { display: block; }
+      .header-actions { justify-content: flex-start; margin-top: 10px; }
+      .filters { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr; }
+      .two-col { grid-template-columns: 1fr; }
+      .bars {
+        grid-template-columns: 36px repeat(6, minmax(34px, 1fr));
+        gap: 5px;
+      }
+      .panel-head { align-items: flex-start; flex-direction: column; }
+      .heat-grid { grid-template-columns: repeat(2, 1fr); }
+      .plan { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">R6</div>
+        <div>
+          <strong>润六尺供需平台</strong>
+          <span>超级管理员中心</span>
+        </div>
+      </div>
+      <div class="side-nav">
+        <div class="nav-title">管理菜单</div>
+        <div class="nav-item active"><span class="nav-dot"></span>使用情况看板</div>
+        <div class="nav-item"><span class="nav-dot"></span>货源与需求</div>
+        <div class="nav-item"><span class="nav-dot"></span>人员与权限</div>
+        <div class="nav-item"><span class="nav-dot"></span>审核与下架</div>
+        <div class="nav-item"><span class="nav-dot"></span>操作日志</div>
+        <div class="nav-title">看板重点</div>
+        <div class="nav-item"><span class="nav-dot"></span>月度经营动作</div>
+        <div class="nav-item"><span class="nav-dot"></span>品类结构变化</div>
+        <div class="nav-item"><span class="nav-dot"></span>人员活跃与完成度</div>
+      </div>
+    </aside>
+
+    <main>
+      <section class="header">
+        <div>
+          <h1>网站使用情况追踪看板</h1>
+          <p class="subtitle">用于超级管理员按月查看供需上传、成交、下架、完成、品类分布、人员操作和登录数据；支持指标组合、月度/历史/实时视角切换。</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn">导出报表</button>
+          <button class="btn">保存筛选</button>
+          <button class="btn primary">同步最新数据</button>
+        </div>
+      </section>
+
+      <section class="filters" aria-label="筛选器">
+        <div class="field">
+          <label for="monthSelect">统计月份</label>
+          <select id="monthSelect"></select>
+        </div>
+        <div class="field">
+          <label for="rangeSelect">时间口径</label>
+          <select id="rangeSelect">
+            <option value="month">当前月</option>
+            <option value="quarter">最近 3 个月</option>
+            <option value="year">年累计</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="teamSelect">人员范围</label>
+          <select id="teamSelect">
+            <option value="all">全部人员</option>
+            <option value="sales1">销售一部</option>
+            <option value="sales2">销售二部</option>
+            <option value="ops">运营组</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="categorySelect">品类范围</label>
+          <select id="categorySelect">
+            <option value="all">全部品类</option>
+          </select>
+        </div>
+        <div class="metric-switch">
+          <strong>趋势图指标组合</strong>
+          <div class="metric-options" id="metricOptions"></div>
+        </div>
+      </section>
+
+      <section class="kpis" id="kpiGrid"></section>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>月度核心动作趋势</h2>
+              <p>上传、成交、下架、完成可自由组合，适合看增长和异常波动。</p>
+            </div>
+            <div class="segmented" id="trendMode">
+              <button class="active" data-mode="count">数量</button>
+              <button data-mode="rate">完成率</button>
+            </div>
+          </div>
+          <div class="panel-body chart-card">
+            <div class="bars" id="trendChart"></div>
+            <div class="legend" id="trendLegend"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>品类分布</h2>
+              <p>支持月度与历史累计两种口径，辅助判断供需结构。</p>
+            </div>
+            <div class="segmented" id="categoryMode">
+              <button class="active" data-mode="month">月度</button>
+              <button data-mode="history">历史</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="two-col">
+              <div class="donut-wrap">
+                <div class="donut" id="categoryDonut">
+                  <div class="donut-center">
+                    <strong id="donutTotal">0</strong>
+                    <span>总记录</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <table class="table" id="categoryTable">
+                  <thead>
+                    <tr>
+                      <th>品类</th>
+                      <th>占比</th>
+                      <th>完成度</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="people-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>人员操作与登录数据</h2>
+              <p>把上传、下架、完成、成交、登录次数和在线时长放在同一张表，方便管理动作。</p>
+            </div>
+            <div class="segmented" id="peopleMode">
+              <button class="active" data-mode="month">月度</button>
+              <button data-mode="realtime">实时</button>
+            </div>
+          </div>
+          <div class="panel-body people-table">
+            <table class="table" id="peopleTable">
+              <thead>
+                <tr>
+                  <th>人员</th>
+                  <th>上传</th>
+                  <th>下架</th>
+                  <th>完成</th>
+                  <th>成交</th>
+                  <th>登录</th>
+                  <th>完成度</th>
+                  <th>最后活跃</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>完成度图形排行榜</h2>
+              <p>人员与品类双排行，结合目标完成率和有效操作质量。</p>
+            </div>
+            <div class="segmented" id="rankMode">
+              <button class="active" data-mode="people">人员</button>
+              <button data-mode="category">品类</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="rank-list" id="rankList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid" style="margin-top:14px;">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>近 7 日活跃热力</h2>
+              <p>用于发现人员是否持续使用系统，而不只是月底集中补录。</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="heat-grid" id="heatGrid"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title">
+              <h2>实时操作流</h2>
+              <p>超级管理员可快速定位刚刚发生的上传、成交、下架和登录。</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="feed" id="feed"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="plan">
+        <article class="plan-card">
+          <h3>数据采集</h3>
+          <p>复用现有 items、logs、用户登录态；新增 login_events 与 analytics_snapshot，记录登录、操作、状态流转和每日快照。</p>
+        </article>
+        <article class="plan-card">
+          <h3>统计接口</h3>
+          <p>新增 /api/admin/analytics/overview、categories、people、realtime，后端聚合后返回，前端只负责渲染。</p>
+        </article>
+        <article class="plan-card">
+          <h3>性能体验</h3>
+          <p>月度和历史统计走缓存快照，实时流只拉最近 50 条；筛选参数变化时局部刷新，避免整页重载。</p>
+        </article>
+        <article class="plan-card">
+          <h3>管理动作</h3>
+          <p>支持导出、保存筛选、异常提醒、低活跃人员提醒、品类供需失衡提醒，后续可接企业微信通知。</p>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const metricMeta = {
+      supplyUploads: { label: "货源上传", color: "#1c6fb8" },
+      demandUploads: { label: "需求上传", color: "#0c91a2" },
+      deals: { label: "成交", color: "#168267" },
+      offline: { label: "下架", color: "#bd7a12" },
+      completed: { label: "完成", color: "#7762b8" }
+    };
+
+    const months = ["2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"];
+    const categories = ["整机服务器", "GPU", "CPU", "内存", "SSD 固态", "网卡"];
+    const people = [
+      { name: "王经理", team: "sales1", role: "管理员", avatar: "王" },
+      { name: "李婷", team: "sales1", role: "销售顾问", avatar: "李" },
+      { name: "张三", team: "sales2", role: "商务专员", avatar: "张" },
+      { name: "陈越", team: "sales2", role: "渠道经理", avatar: "陈" },
+      { name: "赵敏", team: "ops", role: "运营", avatar: "赵" }
+    ];
+
+    const monthly = [
+      { month: "2026-02", supplyUploads: 92, demandUploads: 38, deals: 18, offline: 12, completed: 24 },
+      { month: "2026-03", supplyUploads: 118, demandUploads: 46, deals: 22, offline: 16, completed: 31 },
+      { month: "2026-04", supplyUploads: 106, demandUploads: 54, deals: 25, offline: 21, completed: 35 },
+      { month: "2026-05", supplyUploads: 139, demandUploads: 63, deals: 31, offline: 23, completed: 42 },
+      { month: "2026-06", supplyUploads: 151, demandUploads: 78, deals: 36, offline: 28, completed: 49 },
+      { month: "2026-07", supplyUploads: 126, demandUploads: 72, deals: 34, offline: 19, completed: 45 }
+    ];
+
+    const categoryStats = {
+      "2026-02": [
+        ["整机服务器", 54, 81], ["GPU", 28, 74], ["CPU", 16, 63], ["内存", 12, 58], ["SSD 固态", 14, 67], ["网卡", 6, 55]
+      ],
+      "2026-03": [
+        ["整机服务器", 66, 84], ["GPU", 34, 78], ["CPU", 20, 66], ["内存", 17, 61], ["SSD 固态", 18, 70], ["网卡", 9, 59]
+      ],
+      "2026-04": [
+        ["整机服务器", 61, 82], ["GPU", 38, 81], ["CPU", 23, 69], ["内存", 18, 63], ["SSD 固态", 15, 72], ["网卡", 5, 57]
+      ],
+      "2026-05": [
+        ["整机服务器", 80, 86], ["GPU", 43, 83], ["CPU", 27, 71], ["内存", 21, 65], ["SSD 固态", 22, 74], ["网卡", 9, 60]
+      ],
+      "2026-06": [
+        ["整机服务器", 87, 88], ["GPU", 49, 85], ["CPU", 31, 73], ["内存", 24, 67], ["SSD 固态", 27, 76], ["网卡", 11, 62]
+      ],
+      "2026-07": [
+        ["整机服务器", 75, 87], ["GPU", 42, 84], ["CPU", 29, 72], ["内存", 20, 68], ["SSD 固态", 21, 77], ["网卡", 11, 63]
+      ]
+    };
+
+    const peopleBase = [
+      { name: "王经理", team: "sales1", upload: 38, offline: 7, completed: 15, deals: 10, login: 46, duration: 5.3, score: 91, active: "2 分钟前" },
+      { name: "李婷", team: "sales1", upload: 47, offline: 5, completed: 17, deals: 12, login: 39, duration: 4.8, score: 88, active: "8 分钟前" },
+      { name: "张三", team: "sales2", upload: 31, offline: 4, completed: 13, deals: 8, login: 34, duration: 4.1, score: 82, active: "18 分钟前" },
+      { name: "陈越", team: "sales2", upload: 24, offline: 2, completed: 9, deals: 6, login: 27, duration: 3.7, score: 75, active: "35 分钟前" },
+      { name: "赵敏", team: "ops", upload: 19, offline: 8, completed: 11, deals: 4, login: 51, duration: 6.2, score: 79, active: "1 小时前" }
+    ];
+
+    const heat = [
+      ["06-27", 52], ["06-28", 44], ["06-29", 68], ["06-30", 75], ["07-01", 81], ["07-02", 92], ["07-03", 64]
+    ];
+
+    const feedData = [
+      ["14:32", "李婷上传货源", "GPU H100 现货 8 台，已进入审核队列"],
+      ["14:26", "王经理标记完成", "整机服务器 R760 项目完成，关联客户已回填"],
+      ["14:19", "张三新增需求", "客户寻找 2U GPU 训练服务器，期望 5 日内交付"],
+      ["14:08", "赵敏执行下架", "重复货源已下架，原因：信息过期"],
+      ["13:52", "陈越登录系统", "网页端登录，停留 18 分钟"],
+      ["13:41", "王经理确认成交", "SSD 固态批量需求完成成交登记"]
+    ];
+
+    const state = {
+      month: "2026-07",
+      range: "month",
+      team: "all",
+      category: "all",
+      selectedMetrics: new Set(["supplyUploads", "demandUploads", "deals", "completed"]),
+      trendMode: "count",
+      categoryMode: "month",
+      peopleMode: "month",
+      rankMode: "people"
+    };
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function number(value) {
+      return Number(value || 0).toLocaleString("zh-CN");
+    }
+
+    function initControls() {
+      const monthSelect = byId("monthSelect");
+      monthSelect.innerHTML = months.map(month => `<option value="${month}">${month}</option>`).join("");
+      monthSelect.value = state.month;
+      monthSelect.addEventListener("change", event => {
+        state.month = event.target.value;
+        renderAll();
+      });
+
+      byId("rangeSelect").addEventListener("change", event => {
+        state.range = event.target.value;
+        renderAll();
+      });
+      byId("teamSelect").addEventListener("change", event => {
+        state.team = event.target.value;
+        renderAll();
+      });
+
+      const categorySelect = byId("categorySelect");
+      categorySelect.innerHTML += categories.map(item => `<option value="${item}">${item}</option>`).join("");
+      categorySelect.addEventListener("change", event => {
+        state.category = event.target.value;
+        renderAll();
+      });
+
+      byId("metricOptions").innerHTML = Object.entries(metricMeta).map(([key, meta]) => `
+        <label class="chip">
+          <input type="checkbox" value="${key}" ${state.selectedMetrics.has(key) ? "checked" : ""}>
+          ${meta.label}
+        </label>
+      `).join("");
+      byId("metricOptions").addEventListener("change", event => {
+        if (event.target.matches("input")) {
+          if (event.target.checked) state.selectedMetrics.add(event.target.value);
+          else state.selectedMetrics.delete(event.target.value);
+          if (!state.selectedMetrics.size) {
+            state.selectedMetrics.add(event.target.value);
+            event.target.checked = true;
+          }
+          renderTrend();
+        }
+      });
+
+      bindSegment("trendMode", "trendMode", renderTrend);
+      bindSegment("categoryMode", "categoryMode", renderCategory);
+      bindSegment("peopleMode", "peopleMode", renderPeople);
+      bindSegment("rankMode", "rankMode", renderRank);
+    }
+
+    function bindSegment(id, key, callback) {
+      byId(id).addEventListener("click", event => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        state[key] = button.dataset.mode;
+        [...byId(id).querySelectorAll("button")].forEach(item => item.classList.toggle("active", item === button));
+        callback();
+      });
+    }
+
+    function rangeRows() {
+      const index = months.indexOf(state.month);
+      if (state.range === "month") return [monthly[index]];
+      if (state.range === "quarter") return monthly.slice(Math.max(0, index - 2), index + 1);
+      return monthly.slice(0, index + 1);
+    }
+
+    function currentTotals() {
+      return rangeRows().reduce((acc, row) => {
+        Object.keys(metricMeta).forEach(key => acc[key] = (acc[key] || 0) + row[key]);
+        return acc;
+      }, {});
+    }
+
+    function previousTotals() {
+      const index = months.indexOf(state.month);
+      const span = state.range === "month" ? 1 : state.range === "quarter" ? 3 : index + 1;
+      const rows = monthly.slice(Math.max(0, index - span), index);
+      return rows.reduce((acc, row) => {
+        Object.keys(metricMeta).forEach(key => acc[key] = (acc[key] || 0) + row[key]);
+        return acc;
+      }, {});
+    }
+
+    function renderKpis() {
+      const totals = currentTotals();
+      const prev = previousTotals();
+      const items = [
+        ["supplyUploads", "货源上传数量"],
+        ["demandUploads", "需求上传数量"],
+        ["deals", "成交数量"],
+        ["offline", "下架数量"],
+        ["completed", "完成数量"]
+      ];
+      byId("kpiGrid").innerHTML = items.map(([key, label]) => {
+        const value = totals[key] || 0;
+        const last = prev[key] || Math.max(1, value - 1);
+        const delta = Math.round(((value - last) / Math.max(1, last)) * 100);
+        const tone = delta >= 0 ? "up" : "down";
+        return `
+          <article class="kpi" style="--accent:${metricMeta[key].color}">
+            <div class="kpi-label">${label}</div>
+            <div class="kpi-value">${number(value)}</div>
+            <div class="kpi-foot">
+              <span>${state.range === "month" ? "本月" : state.range === "quarter" ? "近 3 月" : "年累计"}</span>
+              <span class="delta ${tone}">${delta >= 0 ? "+" : ""}${delta}%</span>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function renderTrend() {
+      const rows = monthly;
+      const metrics = [...state.selectedMetrics];
+      const max = Math.max(...rows.map(row => {
+        if (state.trendMode === "rate") return completionRate(row);
+        return metrics.reduce((sum, key) => sum + row[key], 0);
+      }), 1);
+      byId("trendChart").innerHTML = `
+        <div class="axis-label"><span>${state.trendMode === "rate" ? "100%" : number(max)}</span><span>${state.trendMode === "rate" ? "50%" : number(Math.round(max / 2))}</span><span>0</span></div>
+        ${rows.map(row => {
+          const total = metrics.reduce((sum, key) => sum + row[key], 0);
+          const pieces = state.trendMode === "rate"
+            ? `<div class="bar-piece" style="height:${completionRate(row) / 100 * 220}px;background:${metricMeta.completed.color}" title="完成率 ${completionRate(row)}%"></div>`
+            : metrics.map(key => `<div class="bar-piece" style="height:${Math.max(3, row[key] / max * 220)}px;background:${metricMeta[key].color}" title="${metricMeta[key].label} ${row[key]}"></div>`).join("");
+          return `
+            <div class="bar-column">
+              <div class="bar-stack">${pieces}</div>
+              <div class="bar-label">${row.month.slice(5)}</div>
+            </div>
+          `;
+        }).join("")}
+      `;
+      byId("trendLegend").innerHTML = (state.trendMode === "rate" ? [["completed", metricMeta.completed]] : metrics.map(key => [key, metricMeta[key]])).map(([, meta]) => `
+        <span><i class="swatch" style="background:${meta.color}"></i>${meta.label}</span>
+      `).join("");
+    }
+
+    function completionRate(row) {
+      return Math.round((row.completed + row.deals) / Math.max(1, row.supplyUploads + row.demandUploads) * 100);
+    }
+
+    function getCategoryRows() {
+      if (state.categoryMode === "month") return categoryStats[state.month];
+      const total = new Map();
+      months.slice(0, months.indexOf(state.month) + 1).forEach(month => {
+        categoryStats[month].forEach(([name, count, score]) => {
+          const old = total.get(name) || { count: 0, scoreSum: 0, times: 0 };
+          old.count += count;
+          old.scoreSum += score;
+          old.times += 1;
+          total.set(name, old);
+        });
+      });
+      return [...total.entries()].map(([name, row]) => [name, row.count, Math.round(row.scoreSum / row.times)]);
+    }
+
+    function renderCategory() {
+      let rows = getCategoryRows();
+      if (state.category !== "all") rows = rows.filter(row => row[0] === state.category);
+      const total = rows.reduce((sum, row) => sum + row[1], 0);
+      const colors = ["#1c6fb8", "#0c91a2", "#bd7a12", "#168267", "#7762b8", "#c74856"];
+      let cursor = 0;
+      const stops = rows.map((row, index) => {
+        const start = cursor;
+        const span = total ? row[1] / total * 100 : 0;
+        cursor += span;
+        return `${colors[index % colors.length]} ${start}% ${cursor}%`;
+      }).join(", ");
+      byId("categoryDonut").style.background = `conic-gradient(${stops || "#e5edf5 0 100%"})`;
+      byId("donutTotal").textContent = number(total);
+      byId("categoryTable").querySelector("tbody").innerHTML = rows
+        .sort((a, b) => b[1] - a[1])
+        .map((row, index) => `
+          <tr>
+            <td><span class="swatch" style="background:${colors[index % colors.length]}"></span> ${row[0]}</td>
+            <td>${total ? Math.round(row[1] / total * 100) : 0}%</td>
+            <td>${row[2]}%</td>
+          </tr>
+        `).join("");
+    }
+
+    function peopleRows() {
+      return peopleBase
+        .filter(row => state.team === "all" || row.team === state.team)
+        .map(row => {
+          if (state.peopleMode === "realtime") {
+            return {
+              ...row,
+              upload: Math.max(0, Math.round(row.upload * .18)),
+              offline: Math.max(0, Math.round(row.offline * .2)),
+              completed: Math.max(0, Math.round(row.completed * .22)),
+              deals: Math.max(0, Math.round(row.deals * .18)),
+              login: Math.max(1, Math.round(row.login * .12)),
+              score: Math.min(99, row.score + 2)
+            };
+          }
+          return row;
+        });
+    }
+
+    function renderPeople() {
+      byId("peopleTable").querySelector("tbody").innerHTML = peopleRows()
+        .sort((a, b) => b.score - a.score)
+        .map(row => {
+          const profile = people.find(item => item.name === row.name) || {};
+          return `
+            <tr>
+              <td>
+                <div class="person">
+                  <span class="avatar">${profile.avatar || row.name[0]}</span>
+                  <span><strong>${row.name}</strong><br><span class="small">${profile.role || ""}</span></span>
+                </div>
+              </td>
+              <td>${row.upload}</td>
+              <td>${row.offline}</td>
+              <td>${row.completed}</td>
+              <td>${row.deals}</td>
+              <td>${row.login} 次<br><span class="small">${row.duration}h</span></td>
+              <td>${row.score}%</td>
+              <td>${row.active}</td>
+            </tr>
+          `;
+        }).join("");
+      renderRank();
+    }
+
+    function renderRank() {
+      const rows = state.rankMode === "people"
+        ? peopleRows().map(row => ({ name: row.name, score: row.score, sub: `成交 ${row.deals} / 完成 ${row.completed}` }))
+        : getCategoryRows().map(row => ({ name: row[0], score: row[2], sub: `记录 ${row[1]} 条` }));
+      byId("rankList").innerHTML = rows.sort((a, b) => b.score - a.score).slice(0, 6).map((row, index) => `
+        <div class="rank-item">
+          <div class="rank-row">
+            <span class="rank-no">${index + 1}</span>
+            <span class="rank-name">${row.name}<br><span class="small">${row.sub}</span></span>
+            <span class="rank-score">${row.score}%</span>
+          </div>
+          <div class="progress"><span style="width:${row.score}%"></span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderHeat() {
+      byId("heatGrid").innerHTML = heat.map(([day, value]) => {
+        const level = value >= 75 ? "high" : value >= 55 ? "mid" : "low";
+        return `
+          <div class="heat-cell ${level}">
+            <span class="small">${day}</span>
+            <strong>${value}</strong>
+            <span class="small">有效动作</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderFeed() {
+      byId("feed").innerHTML = feedData.map(row => `
+        <div class="feed-item">
+          <div class="feed-time">${row[0]}</div>
+          <div class="feed-main"><strong>${row[1]}</strong><span>${row[2]}</span></div>
+        </div>
+      `).join("");
+    }
+
+    function renderAll() {
+      renderKpis();
+      renderTrend();
+      renderCategory();
+      renderPeople();
+      renderHeat();
+      renderFeed();
+    }
+
+    initControls();
+    renderAll();
+  </script>
+</body>
+</html>

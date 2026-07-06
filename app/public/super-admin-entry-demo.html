@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>右上角管理看板入口演示</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --ink: #172839;
+      --muted: #657789;
+      --line: #d9e3ea;
+      --blue: #1c6fb8;
+      --blue-soft: #e9f4ff;
+      --green: #168267;
+      --amber: #b97612;
+      --red: #c74856;
+      --shadow: 0 14px 34px rgba(35, 61, 84, .08);
+      --radius: 8px;
+      --font: "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 var(--font);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, select { font: inherit; }
+
+    .topbar {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 0 22px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 4px 18px rgba(35, 61, 84, .05);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      background: #102233;
+      color: #fff;
+      font-weight: 900;
+      flex: 0 0 auto;
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: #315064;
+      font-weight: 800;
+      margin-left: 18px;
+    }
+
+    .nav a {
+      white-space: nowrap;
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .user {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+      border-radius: 999px;
+      padding: 0 10px;
+      background: #eaf4ff;
+      color: #165785;
+      font-size: 12px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .btn {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      padding: 0 12px;
+      font-weight: 900;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .btn.dashboard {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn.logout {
+      color: #40596c;
+    }
+
+    .btn.disabled {
+      display: none;
+    }
+
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(340px, .95fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .intro {
+      padding: 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 10px 0 18px;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.7;
+    }
+
+    .role-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #f8fbfd;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      margin-bottom: 16px;
+    }
+
+    .role-control label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .role-control select {
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 0 9px;
+      min-width: 150px;
+    }
+
+    .rule-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .rule {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fbfdff;
+    }
+
+    .rule-no {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 900;
+    }
+
+    .rule strong {
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .rule span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mock-page {
+      overflow: hidden;
+    }
+
+    .mock-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mock-head strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .mock-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .mock-actions {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .tiny {
+      min-height: 30px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #40596c;
+      padding: 5px 8px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .tiny.blue {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .mock-body {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+    }
+
+    .summary span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .summary strong {
+      display: block;
+      font-size: 26px;
+      margin-top: 4px;
+      line-height: 1.2;
+    }
+
+    .fake-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .fake-row {
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(90deg, #fff, #f8fbfd);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .flow {
+      margin-top: 18px;
+      padding: 16px;
+    }
+
+    .flow h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: #fff;
+      min-width: 0;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .step span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .code {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #102233;
+      color: #dce8ef;
+      padding: 12px;
+      overflow-x: auto;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .message {
+      margin-top: 12px;
+      min-height: 22px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .message.ok { color: var(--green); }
+    .message.warn { color: var(--amber); }
+
+    @media (max-width: 980px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px;
+      }
+      .nav {
+        margin-left: 0;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .right-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+      }
+      .hero {
+        grid-template-columns: 1fr;
+      }
+      .steps {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      main { padding: 12px; }
+      .summary-grid,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+      h1 { font-size: 23px; }
+      .mock-head {
+        display: block;
+      }
+      .mock-actions {
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
+      .role-control {
+        display: grid;
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">R6</div>
+      <div>
+        <strong>润六尺供需平台</strong>
+        <span>rlcgxpt.com</span>
+      </div>
+      <nav class="nav" aria-label="主导航">
+        <a href="#">货源</a>
+        <a href="#">需求</a>
+        <a href="#">批量导入</a>
+        <a href="#">操作日志</a>
+      </nav>
+    </div>
+
+    <div class="right-actions" aria-label="账户操作区">
+      <span class="user">王经理</span>
+      <span class="role-pill" id="rolePill">超级管理员</span>
+      <a class="btn dashboard" id="dashboardButton" href="super-admin-usage-dashboard-demo.html">管理看板</a>
+      <button class="btn logout" type="button">退出登录</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <article class="panel intro">
+        <h1>入口收敛为右上角一个按钮</h1>
+        <p class="lead">正式上线时，主站 rlcgxpt.com 不增加侧边栏入口，也不在人员页、品类页做联动入口。只有超级管理员在右上角账户操作区看到“管理看板”按钮，点击后跳转到子域名管理看板。</p>
+
+        <div class="role-control">
+          <label for="roleSelect">演示当前角色</label>
+          <select id="roleSelect">
+            <option value="super">超级管理员</option>
+            <option value="admin">普通管理员</option>
+            <option value="staff">普通人员</option>
+          </select>
+        </div>
+
+        <div class="rule-list">
+          <div class="rule">
+            <div class="rule-no">1</div>
+            <div><strong>按钮位置</strong><span>放在右上角账户操作区，紧挨“退出登录”，不进入业务导航。</span></div>
+          </div>
+          <div class="rule">
+            <div class="rule-no">2</div>
+            <div><strong>可见范围</strong><span>只有超级管理员可见；普通管理员和普通人员不显示这个按钮。</span></div>
+          </div>
+          <div class="rule">
+            <div class="rule-no">3</div>
+            <div><strong>跳转目标</strong><span>正式目标为 https://admin.rlcgxpt.com；本演示按钮先跳到本地看板页面。</span></div>
+          </div>
+          <div class="rule">
+            <div class="rule-no">4</div>
+            <div><strong>进入限制</strong><span>子域名不挂公开导航，必须通过主站按钮签发的一次性 ticket 进入。</span></div>
+          </div>
+        </div>
+
+        <div class="message ok" id="roleMessage">当前角色可看到右上角“管理看板”按钮。</div>
+      </article>
+
+      <article class="panel mock-page">
+        <div class="mock-head">
+          <div>
+            <strong>主站顶部栏示意</strong>
+            <span>按钮只出现在退出登录同一列</span>
+          </div>
+          <div class="mock-actions">
+            <span class="tiny">王经理</span>
+            <span class="tiny">超级管理员</span>
+            <span class="tiny blue">管理看板</span>
+            <span class="tiny">退出登录</span>
+          </div>
+        </div>
+        <div class="mock-body">
+          <div class="summary-grid">
+            <div class="summary"><span>货源</span><strong>1,286</strong></div>
+            <div class="summary"><span>需求</span><strong>742</strong></div>
+            <div class="summary"><span>成交</span><strong>238</strong></div>
+          </div>
+          <div class="fake-list">
+            <div class="fake-row"><span>整机服务器 B300 现货</span><span>刚刚更新</span></div>
+            <div class="fake-row"><span>GPU 训练服务器需求</span><span>跟进中</span></div>
+            <div class="fake-row"><span>SSD 固态批量采购</span><span>已完成</span></div>
+            <div class="fake-row"><span>R760 AI 服务器</span><span>待审核</span></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="panel flow">
+      <h2>正式上线的跳转与限制方案</h2>
+      <div class="steps">
+        <div class="step"><strong>主站按钮</strong><span>超级管理员点击 rlcgxpt.com 右上角“管理看板”。</span></div>
+        <div class="step"><strong>签发 ticket</strong><span>主站后端校验登录态和角色，生成 60 秒有效的一次性 ticket。</span></div>
+        <div class="step"><strong>跳转子域名</strong><span>浏览器跳转到 admin.rlcgxpt.com/entry?ticket=xxx。</span></div>
+        <div class="step"><strong>子域名消费</strong><span>看板服务校验并消费 ticket，成功后建立管理看板会话。</span></div>
+      </div>
+      <pre class="code">GET  https://rlcgxpt.com/api/admin-dashboard-entry
+->  校验当前用户 role === "super_admin"
+->  返回 302 https://admin.rlcgxpt.com/entry?ticket=one_time_token
+
+GET  https://admin.rlcgxpt.com/entry?ticket=one_time_token
+->  校验 ticket 未过期、未使用、来源用户仍是超级管理员
+->  设置 HttpOnly 看板会话 Cookie
+->  跳转 /dashboard</pre>
+    </section>
+  </main>
+
+  <script>
+    const roleSelect = document.getElementById("roleSelect");
+    const rolePill = document.getElementById("rolePill");
+    const dashboardButton = document.getElementById("dashboardButton");
+    const roleMessage = document.getElementById("roleMessage");
+
+    function setRole(role) {
+      const isSuper = role === "super";
+      rolePill.textContent = role === "super" ? "超级管理员" : role === "admin" ? "普通管理员" : "普通人员";
+      dashboardButton.classList.toggle("disabled", !isSuper);
+      dashboardButton.setAttribute("aria-hidden", String(!isSuper));
+      dashboardButton.tabIndex = isSuper ? 0 : -1;
+      roleMessage.className = `message ${isSuper ? "ok" : "warn"}`;
+      roleMessage.textContent = isSuper
+        ? "当前角色可看到右上角“管理看板”按钮。"
+        : "当前角色不显示“管理看板”按钮，只保留退出登录等普通账户操作。";
+    }
+
+    roleSelect.addEventListener("change", (event) => setRole(event.target.value));
+    setRole(roleSelect.value);
+  </script>
+</body>
+</html>

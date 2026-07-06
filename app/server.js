@@ -5,8 +5,22 @@ const crypto = require('crypto');
 const zlib = require('zlib');
 const { URL } = require('url');
 const { appendMiniMediaSignature, hasValidMiniMediaSignature } = require('../lib/mini-media-signing');
+const { toMiniLog } = require('./mini-log-sync');
+const { isPublicUploadMediaPath } = require('./upload-access');
+const {
+  isIdempotentProcessedStatus,
+  normalizeProcessedStatusForResponse,
+  normalizeStatusAction
+} = require('./status-idempotency');
+const {
+  canEnterAdminDashboard,
+  createTicketStore,
+  dashboardOriginForRequest,
+  isAdminDashboardHost
+} = require('./admin-dashboard-entry');
 
 const PORT = Number(process.env.PORT || 3000);
+const ADMIN_DASHBOARD_PORT = Number(process.env.JUZHEN_ADMIN_DASHBOARD_PORT || 0);
 function requireEnv(name) {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
@@ -51,10 +65,20 @@ const userSessions = new Map();
 const loginFailures = new Map();
 const smsCodes = new Map();
 const clients = new Set();
+const adminDashboardSessions = new Map();
+const adminDashboardTickets = createTicketStore({
+  ttlMs: Number(process.env.JUZHEN_ADMIN_DASHBOARD_TICKET_TTL_MS || 60 * 1000)
+});
 const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const ADMIN_DASHBOARD_SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+const ADMIN_DASHBOARD_HOSTS = (process.env.JUZHEN_ADMIN_DASHBOARD_HOSTS || 'admin.rlcgxpt.localhost')
+  .split(',')
+  .map(value => value.trim())
+  .filter(Boolean);
 const LOGIN_LOCK_MS = 15 * 60 * 1000;
 const LOGIN_MAX_FAILS = 5;
 const MINI_BOOTSTRAP_ENABLED = process.env.JUZHEN_ENABLE_MINI_BOOTSTRAP === 'true';
+const MOCK_ADMIN_LOGIN_ENABLED = process.env.JUZHEN_ENABLE_MOCK_ADMIN_LOGIN === 'true';
 const SENSITIVE_ACTION_MAX_AGE_MS = 10 * 60 * 1000;
 const MINI_SESSION_SECRET = process.env.JUZHEN_MINI_SESSION_SECRET || MINI_PROGRAM_TOKEN;
 const MINI_MEDIA_SIGNING_SECRET = process.env.JUZHEN_MEDIA_SIGNING_SECRET || MINI_SESSION_SECRET;
@@ -682,6 +706,38 @@ function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' });
   res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
 }
+function sendRedirect(res, location, headers = {}) {
+  res.writeHead(302, { location, 'cache-control': 'no-store', ...headers });
+  res.end();
+}
+function htmlPage(title, body) {
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${title}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f4f7fb; color: #172839; font-family: "Segoe UI", "Microsoft YaHei", Arial, sans-serif; }
+    main { width: min(560px, 100%); padding: 28px; border: 1px solid #d9e3ea; border-radius: 8px; background: #fff; box-shadow: 0 14px 34px rgba(35, 61, 84, .08); }
+    h1 { margin: 0 0 10px; font-size: 24px; }
+    p { margin: 0 0 14px; color: #657789; line-height: 1.7; }
+    code { display: block; padding: 10px; border-radius: 8px; background: #f0f5f8; color: #24455d; overflow-x: auto; }
+    a { color: #1c6fb8; font-weight: 800; text-decoration: none; }
+  </style>
+</head>
+<body><main>${body}</main></body>
+</html>`;
+}
+function adminDashboardAccessPage(message = '请从主站右上角“管理看板”入口进入') {
+  return htmlPage('管理看板访问受限', `
+    <h1>管理看板访问受限</h1>
+    <p>${message}</p>
+    <p>模拟主站入口：</p>
+    <code>http://127.0.0.1:${PORT}</code>
+  `);
+}
 function sendCsv(res, filename, rows) {
   const csv = '\uFEFF' + rows.map(row => row.map(csvCell).join(',')).join('\n') + '\n';
   res.writeHead(200, {
@@ -707,6 +763,55 @@ function requireAuth(req, res) {
     return null;
   }
   return s;
+}
+function adminDashboardCookieSecure(req) {
+  const host = String(req.headers.host || '').split(':')[0].toLowerCase();
+  return !(host === 'localhost' || host.endsWith('.localhost') || host === '127.0.0.1');
+}
+function requestHostPort(req) {
+  const raw = String(req.headers.host || '');
+  const port = raw.includes(':') ? Number(raw.split(':').pop()) : 0;
+  return Number.isFinite(port) ? port : 0;
+}
+function isAdminDashboardRequest(req) {
+  return isAdminDashboardHost(req.headers.host, ADMIN_DASHBOARD_HOSTS)
+    || (ADMIN_DASHBOARD_PORT > 0 && ADMIN_DASHBOARD_PORT !== PORT && requestHostPort(req) === ADMIN_DASHBOARD_PORT);
+}
+function adminDashboardCookie(sid, req, maxAgeSeconds = 86400) {
+  return [
+    `jz_admin_session=${sid}`,
+    'HttpOnly',
+    adminDashboardCookieSecure(req) ? 'Secure' : '',
+    'SameSite=Lax',
+    'Path=/',
+    `Max-Age=${maxAgeSeconds}`
+  ].filter(Boolean).join('; ');
+}
+function createAdminDashboardSession(session) {
+  const sid = crypto.randomBytes(24).toString('hex');
+  adminDashboardSessions.set(sid, {
+    ...session,
+    createdAt: nowMs(),
+    expiresAt: nowMs() + ADMIN_DASHBOARD_SESSION_MAX_AGE_MS
+  });
+  return sid;
+}
+function getAdminDashboardSession(req) {
+  const sid = parseCookies(req).jz_admin_session;
+  const session = sid ? adminDashboardSessions.get(sid) : null;
+  if (!session) return null;
+  if (session.expiresAt && session.expiresAt < nowMs()) {
+    adminDashboardSessions.delete(sid);
+    return null;
+  }
+  return session;
+}
+function requireAdminDashboardSession(req, res) {
+  const session = getAdminDashboardSession(req);
+  if (!canEnterAdminDashboard(session)) {
+    return send(res, 403, adminDashboardAccessPage(), 'text/html; charset=utf-8');
+  }
+  return session;
 }
 function timingSafeTextEqual(a, b) {
   const left = Buffer.from(String(a || ''));
@@ -983,6 +1088,17 @@ function assertStatusTransitionAllowed(item = {}, normalizedAction = '') {
     assertEditableBusinessItem(current);
   }
 }
+function assertOfflineApprovalPermission(item = {}, normalizedAction = '', actor = {}) {
+  if (!['offline_approve', 'offline_reject'].includes(normalizedAction)) return;
+  const operatorRole = text(actor.role || '', 40);
+  const isAdminActor = ['admin', 'superadmin', 'manager'].includes(operatorRole);
+  const targetGroup = item.reviewGroup || item.ownerGroup || '';
+  if (!isAdminActor || (operatorRole !== 'superadmin' && targetGroup && actor.group !== targetGroup)) {
+    const err = new Error('只能审核自己负责分组的信息');
+    err.status = 403;
+    throw err;
+  }
+}
 function applyStatusAction(item, body = {}, actor = {}) {
   const action = text(body.action, 40);
   const operatorId = text(actor.userId || actor.id || '', 80);
@@ -993,28 +1109,10 @@ function applyStatusAction(item, body = {}, actor = {}) {
   const reason = text(body.reason || '', 1000);
   const next = withBusinessDefaults(item);
   const at = now();
-  const aliases = {
-    approve_offline: 'offline_approve',
-    offline_approve: 'offline_approve',
-    approveOffline: 'offline_approve',
-    offlineApproved: 'offline_approve',
-    reject_offline: 'offline_reject',
-    offline_reject: 'offline_reject',
-    rejectOffline: 'offline_reject',
-    offlineRejected: 'offline_reject'
-  };
-  const normalizedAction = aliases[action] || action;
+  const normalizedAction = normalizeStatusAction(action);
   assertStatusTransitionAllowed(next, normalizedAction);
+  assertOfflineApprovalPermission(next, normalizedAction, actor);
   const operatorRole = text(actor.role || '', 40);
-  if (['offline_approve', 'offline_reject'].includes(normalizedAction)) {
-    const isAdminActor = ['admin', 'superadmin', 'manager'].includes(operatorRole);
-    const targetGroup = next.reviewGroup || next.ownerGroup || '';
-    if (!isAdminActor || (operatorRole !== 'superadmin' && targetGroup && actor.group !== targetGroup)) {
-      const err = new Error('只能审核自己负责分组的信息');
-      err.status = 403;
-      throw err;
-    }
-  }
   const autoApproveOffline = AUTO_APPROVE_OFFLINE_REASONS.has(reason);
   const isAdminActorForStatus = ['admin', 'superadmin', 'manager'].includes(operatorRole);
   if (['complete', 'offline'].includes(normalizedAction) && !isAdminActorForStatus) {
@@ -1135,17 +1233,7 @@ function applyStatusAction(item, body = {}, actor = {}) {
 }
 function rejectWebApprovalAction(body = {}) {
   const action = text(body.action, 40);
-  const aliases = {
-    approve_offline: 'offline_approve',
-    offline_approve: 'offline_approve',
-    approveOffline: 'offline_approve',
-    offlineApproved: 'offline_approve',
-    reject_offline: 'offline_reject',
-    offline_reject: 'offline_reject',
-    rejectOffline: 'offline_reject',
-    offlineRejected: 'offline_reject'
-  };
-  const normalized = aliases[action] || action;
+  const normalized = normalizeStatusAction(action);
   if (['offline_approve', 'offline_reject'].includes(normalized)) {
     return '审批操作必须在小程序端完成';
   }
@@ -1911,6 +1999,27 @@ function canServeUploadMedia(req, res, url) {
   send(res, 401, { error: 'unauthorized' });
   return false;
 }
+function handleAdminDashboardHost(req, res, url) {
+  if (req.method === 'GET' && url.pathname === '/entry') {
+    const result = adminDashboardTickets.consume(url.searchParams.get('ticket'));
+    if (!result.ok || !canEnterAdminDashboard(result.session)) {
+      return send(res, 403, adminDashboardAccessPage('入口凭证无效、已过期或已使用，请从主站右上角“管理看板”重新进入。'), 'text/html; charset=utf-8');
+    }
+    const sid = createAdminDashboardSession(result.session);
+    return sendRedirect(res, '/dashboard', {
+      'set-cookie': adminDashboardCookie(sid, req)
+    });
+  }
+  if (req.method === 'GET' && url.pathname === '/dashboard') {
+    if (!requireAdminDashboardSession(req, res)) return;
+    return send(res, 200, fs.readFileSync(path.join(PUBLIC, 'super-admin-usage-dashboard-demo.html'), 'utf8'), 'text/html; charset=utf-8');
+  }
+  if (req.method === 'GET' && url.pathname === '/') {
+    if (getAdminDashboardSession(req)) return sendRedirect(res, '/dashboard');
+    return send(res, 403, adminDashboardAccessPage(), 'text/html; charset=utf-8');
+  }
+  return send(res, 404, adminDashboardAccessPage('管理看板模拟域名下没有该页面，请从主站入口进入。'), 'text/html; charset=utf-8');
+}
 async function saveMiniUpload(req, res, url, kind) {
   const db = readDb();
   if (!requireMiniAuth(req, res, url, db, { allowLegacy: true })) return;
@@ -1940,15 +2049,33 @@ async function saveMiniUpload(req, res, url, kind) {
 process.on('unhandledRejection', error => console.error('unhandledRejection', error));
 process.on('uncaughtException', error => console.error('uncaughtException', error));
 
-const server = http.createServer(async (req, res) => {
+const requestHandler = async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (isAdminDashboardRequest(req)) {
+      return handleAdminDashboardHost(req, res, url);
+    }
     if (req.method === 'GET' && url.pathname.startsWith('/uploads/')) {
+      if (isPublicUploadMediaPath(url.pathname)) {
+        return servePublicFile(req, res, url);
+      }
       if (!canServeUploadMedia(req, res, url)) return;
       return servePublicFile(req, res, url);
     }
     if (req.method === 'GET' && url.pathname === '/') {
       return send(res, 200, fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8'), 'text/html; charset=utf-8');
+    }
+    if (req.method === 'GET' && url.pathname === '/api/admin-dashboard-entry') {
+      const s = requireAuth(req, res);
+      if (!s) return;
+      if (!canEnterAdminDashboard(s)) return send(res, 403, { error: '只有超级管理员可以进入管理看板' });
+      const ticket = adminDashboardTickets.issue(s);
+      const origin = dashboardOriginForRequest({
+        configuredOrigin: process.env.JUZHEN_ADMIN_DASHBOARD_ORIGIN || '',
+        host: req.headers.host || '',
+        fallbackPort: PORT
+      });
+      return sendRedirect(res, `${origin}/entry?ticket=${encodeURIComponent(ticket)}`);
     }
     if (req.method === 'POST' && url.pathname === '/api/login') {
       const body = await bodyJson(req);
@@ -2090,6 +2217,32 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/api/me') {
       const s = getSession(req);
       return send(res, 200, { authenticated: Boolean(s), role: s?.role || '', name: s?.name || '', phone: s?.phone || '', group: s?.group || '', displayName: s?.displayName || (s ? displayUser(s) : ''), mustChangePassword: Boolean(s?.mustChangePassword), approvalGroup: approvalGroupForSession(s) });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/mock-mode') {
+      return send(res, 200, { mockAdminLogin: MOCK_ADMIN_LOGIN_ENABLED });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/mock-login/superadmin') {
+      if (!MOCK_ADMIN_LOGIN_ENABLED) return send(res, 404, { error: 'not found' });
+      const db = readDb();
+      const user = (db.users || []).find(row => row.role === 'superadmin' && row.status === 'approved');
+      const sid = crypto.randomBytes(24).toString('hex');
+      const session = {
+        role: 'superadmin',
+        name: user?.name || '模拟超级管理员',
+        phone: user?.phone || '',
+        group: user?.group || '模拟环境',
+        displayName: user ? displayUser(user) : '模拟超级管理员',
+        authMethod: 'mock',
+        createdAt: nowMs(),
+        expiresAt: nowMs() + SESSION_MAX_AGE_MS
+      };
+      sessions.set(sid, session);
+      res.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8',
+        'set-cookie': `jz_session=${sid}; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`,
+        'cache-control': 'no-store'
+      });
+      return res.end(JSON.stringify({ ok: true, role: session.role, name: session.name, displayName: session.displayName, mock: true }));
     }
     if (req.method === 'GET' && url.pathname === '/api/admin/users') {
       const s = requireSuperAdminSession(req, res);
@@ -2478,6 +2631,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/api/mini/upload/video') {
       return saveMiniUpload(req, res, url, 'video');
     }
+    if (req.method === 'GET' && url.pathname === '/api/mini/logs') {
+      const db = readDb();
+      const miniAuth = requireMiniAuth(req, res, url, db, { allowLegacy: true });
+      if (!miniAuth) return;
+      const limit = Math.max(1, Math.min(500, Number(url.searchParams.get('limit')) || 300));
+      return send(res, 200, { logs: db.logs.slice(0, limit).map(toMiniLog) });
+    }
     if (req.method === 'GET' && url.pathname === '/api/mini/items') {
       const db = readDb();
       const miniAuth = requireMiniAuth(req, res, url, db, { allowLegacy: true });
@@ -2553,14 +2713,24 @@ const server = http.createServer(async (req, res) => {
       const miniAuth = requireMiniAuth(req, res, url, db, { allowLegacy: true });
       if (!miniAuth) return;
       const body = await bodyJson(req);
+      const requestedAction = normalizeStatusAction(text(body.action || '', 40));
       const idx = db.items.findIndex(x => x.id === id && !x.deleted);
       if (idx === -1) {
         const processed = db.items.find(x => x.id === id);
         if (processed) {
-          const requestedAction = text(body.action || '', 40);
-          if (requestedAction === 'offline' && (processed.deleted || processed.status === 'offline')) {
-            const actor = miniAuth.actor || miniActorFromQuery(db, url);
-            return send(res, 200, { ok: true, item: miniItem(processed, actor), idempotent: true });
+          if (isIdempotentProcessedStatus(processed, requestedAction)) {
+            let actor;
+            try {
+              actor = miniStatusActor(db, body, processed, miniAuth.actor);
+              assertOfflineApprovalPermission(processed, requestedAction, actor);
+            } catch (e) {
+              return send(res, e.status || 400, { error: e.message || '状态操作失败' });
+            }
+            return send(res, 200, {
+              ok: true,
+              item: miniItem(normalizeProcessedStatusForResponse(processed, requestedAction), actor),
+              idempotent: true
+            });
           }
           return send(res, 409, { error: '该下架申请已处理，请刷新列表' });
         }
@@ -2570,6 +2740,14 @@ const server = http.createServer(async (req, res) => {
       let s;
       try {
         s = miniStatusActor(db, body, before, miniAuth.actor);
+        if (isIdempotentProcessedStatus(before, requestedAction)) {
+          assertOfflineApprovalPermission(before, requestedAction, s);
+          return send(res, 200, {
+            ok: true,
+            item: miniItem(normalizeProcessedStatusForResponse(before, requestedAction), s),
+            idempotent: true
+          });
+        }
         db.items[idx] = applyStatusAction(before, body, s);
       } catch (e) {
         return send(res, e.status || 400, { error: e.message || '状态操作失败' });
@@ -2587,9 +2765,14 @@ const server = http.createServer(async (req, res) => {
   } catch (e) {
     send(res, 500, { error: e.message });
   }
-});
+};
 
+const server = http.createServer(requestHandler);
 server.listen(PORT, '127.0.0.1', () => console.log(`juzhen listening on ${PORT}`));
+if (ADMIN_DASHBOARD_PORT > 0 && ADMIN_DASHBOARD_PORT !== PORT) {
+  const adminServer = http.createServer(requestHandler);
+  adminServer.listen(ADMIN_DASHBOARD_PORT, '127.0.0.1', () => console.log(`juzhen admin dashboard listening on ${ADMIN_DASHBOARD_PORT}`));
+}
 
 
 

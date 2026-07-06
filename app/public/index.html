@@ -125,6 +125,15 @@
       border: 1px solid var(--line);
       white-space: nowrap;
     }
+    .dashboard-entry {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      background: #126fbd;
+      border-color: #126fbd;
+      color: #fff;
+    }
     .filters {
       background: rgba(255, 255, 255, .74);
       border: 1px solid var(--line);
@@ -814,6 +823,7 @@
         <button class="ghost" onclick="sendSmsCode()">获取验证码</button>
       </div>
       <button onclick="login()">进入看板</button>
+      <button id="mockSuperAdminLoginBtn" class="ghost hidden" type="button" onclick="mockSuperAdminLogin()">模拟超级管理员登录</button>
       <div id="loginErr" class="err"></div>
     </div>
   </section>
@@ -846,6 +856,7 @@
         <span class="pill ok">实时同步已连接</span>
         <span id="updated" class="pill">最近更新：--</span>
         <span id="role" class="pill">成员</span>
+        <a id="adminDashboardBtn" class="ghost dashboard-entry hidden" href="/api/admin-dashboard-entry">管理看板</a>
         <button class="ghost" onclick="logout()">退出登录</button>
       </div>
     </header>
@@ -1227,6 +1238,23 @@
         $('loginErr').textContent = e.message || '验证码发送失败';
       }
     }
+    async function initMockMode() {
+      try {
+        const mode = await api('/api/mock-mode');
+        $('mockSuperAdminLoginBtn').classList.toggle('hidden', !mode.mockAdminLogin);
+      } catch (e) {
+        $('mockSuperAdminLoginBtn').classList.add('hidden');
+      }
+    }
+    async function mockSuperAdminLogin() {
+      try {
+        $('loginErr').textContent = '';
+        await api('/api/mock-login/superadmin', { method: 'POST' });
+        await boot();
+      } catch (e) {
+        $('loginErr').textContent = e.message || '模拟登录失败';
+      }
+    }
 
     async function changePassword() {
       try {
@@ -1257,6 +1285,7 @@
       $('deletedBtn').classList.toggle('hidden', !adminRole);
       $('logsBtn').classList.toggle('hidden', !adminRole);
       $('memberAdminBtn').classList.toggle('hidden', me.role !== 'superadmin');
+      $('adminDashboardBtn').classList.toggle('hidden', me.role !== 'superadmin');
       if (me.mustChangePassword) {
         $('passwordModal').classList.remove('hidden');
         return;
@@ -2240,6 +2269,7 @@
     function time(s) { return new Date(s).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }); }
     function esc(s) { return String(s || '').replace(/[&<>"]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m])); }
 
+    initMockMode();
     boot().catch(() => {});
   </script>
 </body>

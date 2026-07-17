@@ -8,6 +8,12 @@ const { appendMiniMediaSignature, hasValidMiniMediaSignature } = require('../lib
 const { toMiniLog } = require('./mini-log-sync');
 const { isPublicUploadMediaPath } = require('./upload-access');
 const {
+  MINI_MACHINE_CONFIG_KEYS,
+  mergeMiniMachineConfig,
+  synchronizedOwnerInfo,
+  validateMiniSupply
+} = require('./mini-item-contract');
+const {
   isIdempotentProcessedStatus,
   normalizeProcessedStatusForResponse,
   normalizeStatusAction
@@ -110,7 +116,7 @@ const LEGACY_CATEGORIES = ['整机', '硬盘'];
 const MINI_CATEGORIES = [...CATEGORY_OPTIONS, ...LEGACY_CATEGORIES];
 const MINI_CONDITIONS = ['新', '全新', '拆机', '二手', '未标注'];
 const MINI_SCOPES = ['mine', 'company', 'shared'];
-const MACHINE_CONFIG_KEYS = ['gpu', 'cpu', 'memory', 'systemDisk', 'dataDisk', 'nic1', 'nic2', 'nic3', 'nic4', 'extraNics', 'raid', 'psu', 'pcieSwitch'];
+const MACHINE_CONFIG_KEYS = MINI_MACHINE_CONFIG_KEYS;
 const EXPORT_HEADER = ['类型', '品类', '成色', '型号规格', '数量', '售卖价格', '售卖单位', '一年全包', '两年全包', '三年全包', '一年搬迁', '两年搬迁', '三年搬迁', '租赁单位', 'GPU', 'CPU', '内存', '系统盘', '数据盘', '网卡1', '网卡2', '网卡3', '网卡4', '更多网卡', 'Raid卡', '电源', 'PCIE交换芯片', '货主信息', '联系人', '电话', '客户标签', '紧急', '备注', '范围', '共享给', '发布时间', '发布人', '是否删除', '删除人'];
 const PRICE_UNITS = {
   CNY_TEN_THOUSAND: 'cny_10k',
@@ -1298,8 +1304,8 @@ function uniqueUserLoginKey(name, phone) {
 function generateInitialPassword() {
   return `Rlc${crypto.randomBytes(5).toString('hex')}8`;
 }
-function machineConfig(input = {}) {
-  return Object.fromEntries(MACHINE_CONFIG_KEYS.map(k => [k, text(input[k], 200)]));
+function machineConfig(input = {}, preserved = {}) {
+  return mergeMiniMachineConfig(preserved, input);
 }
 function mediaExt(mime, type) {
   const imageTypes = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif' };
@@ -1458,8 +1464,8 @@ function cleanItem(input, s, old = {}) {
   const rawNote = pick('note');
   const note = isMachineCategory(category) ? stripMachineConfigText(rawNote) : rawNote;
   const parsedConfig = parseMachineConfigText(rawNote);
-  const rawMachineConfig = { ...parsedConfig, ...(input.machineConfig || old.machineConfig || {}) };
   const side = input.side === 'demand' ? 'demand' : (old.side || 'supply');
+  const rawMachineConfig = { ...parsedConfig, ...(input.machineConfig || old.machineConfig || {}) };
   const canEditCargoOwner = !old.id || canSeeCargoOwnerInfo(old, s);
   const cargoOwnerInfo = side === 'supply'
     ? (canEditCargoOwner ? text(input.cargoOwnerInfo ?? input.ownerInfo ?? old.cargoOwnerInfo ?? old.ownerInfo ?? '', 1000) : (old.cargoOwnerInfo || old.ownerInfo || ''))
@@ -1467,6 +1473,7 @@ function cleanItem(input, s, old = {}) {
   const cargoOwnerVisibility = side === 'supply' && cargoOwnerInfo
     ? text(input.cargoOwnerVisibility || old.cargoOwnerVisibility || cargoOwnerVisibilityForActor(s), 40)
     : '';
+  const ownerInfoFields = synchronizedOwnerInfo(cargoOwnerInfo);
   const media = normalizeMedia(input.media ?? old.media, {
     image: input.image ?? old.image ?? '',
     video: input.video ?? old.video ?? ''
@@ -1489,7 +1496,7 @@ function cleanItem(input, s, old = {}) {
     image: media.find(item => item.type === 'image')?.url || pick('image'),
     video: media.find(item => item.type === 'video')?.url || pick('video'),
     media,
-    cargoOwnerInfo,
+    ...ownerInfoFields,
     cargoOwnerVisibility,
     scope,
     sharedTo: scope === 'shared' ? splitNames(input.sharedTo ?? old.sharedTo) : [],
@@ -1520,7 +1527,9 @@ function cleanItem(input, s, old = {}) {
     completionReviewedBy: old.completionReviewedBy || '',
     completionReviewedByName: old.completionReviewedByName || '',
     reviewGroup: old.reviewGroup || old.ownerGroup || s.group || '',
-    machineConfig: isMachineCategory(category) ? machineConfig(rawMachineConfig) : {},
+    machineConfig: side === 'supply'
+      ? machineConfig(rawMachineConfig, old.machineConfig || {})
+      : (isMachineCategory(category) ? machineConfig(rawMachineConfig, old.machineConfig || {}) : {}),
     deleted: Boolean(old.deleted),
     createdAt: old.createdAt || now(),
     updatedAt: now(),
@@ -1809,6 +1818,9 @@ function normalizeMiniItemInput(input = {}, old = {}) {
   const condition = normalizeCondition(src.condition || old.condition, old.condition || '未标注');
   const normalizedScope = normalizeScopeWithShared(src.scope || old.scope, src.sharedTo ?? old.sharedTo, old.scope || 'company', side);
   const rentalQuotes = Object.fromEntries(RENTAL_KEYS.map(key => [key, text(src.pricing?.rentalQuotes?.[key] ?? old.pricing?.rentalQuotes?.[key] ?? '', 60)]));
+  const mergedMachineConfig = mergeMiniMachineConfig(old.machineConfig || {}, src.machineConfig || {});
+  const cargoOwnerInfo = text(src.cargoOwnerInfo ?? src.ownerInfo ?? old.cargoOwnerInfo ?? old.ownerInfo ?? '', 1000);
+  const inputMedia = src.mediaFiles ?? src.media ?? old.media;
   return {
     side,
     category,
@@ -1826,16 +1838,20 @@ function normalizeMiniItemInput(input = {}, old = {}) {
     }, src.price ?? old.price ?? ''),
     person: text(src.person ?? old.person ?? '', 300),
     phone: text(src.phone ?? old.phone ?? '', 300),
-    customer: src.customer === '新客户' ? '新客户' : (old.customer || '老客户'),
+    customer: ['新客户', '老客户'].includes(src.customer) ? src.customer : (old.customer || '老客户'),
     urgent: truthy(src.urgent ?? old.urgent ?? false),
     note: text(src.note ?? old.note ?? '', 300),
     image: text(src.image ?? old.image ?? '', 50000000),
     video: text(src.video ?? old.video ?? '', 50000000),
-    media: normalizeMedia(src.media ?? old.media, { image: src.image ?? old.image ?? '', video: src.video ?? old.video ?? '' }),
+    media: normalizeMedia(inputMedia, { image: src.image ?? old.image ?? '', video: src.video ?? old.video ?? '' }),
+    cargoOwnerInfo,
+    ownerInfo: cargoOwnerInfo,
     scope: normalizedScope.scope,
     sharedTo: normalizedScope.sharedTo,
     ownerName: normalizeName(src.ownerName || old.ownerName || src.person || '微信小程序'),
-    machineConfig: isMachineCategory(category) ? machineConfig(src.machineConfig || old.machineConfig || {}) : {}
+    machineConfig: side === 'supply'
+      ? mergedMachineConfig
+      : (isMachineCategory(category) ? machineConfig(mergedMachineConfig, old.machineConfig || {}) : {})
   };
 }
 function miniActor(input = {}, old = {}, sessionActor = null) {
@@ -1923,7 +1939,9 @@ function miniItem(item, actor = null) {
     scope,
     sharedTo: Array.isArray(item.sharedTo) ? item.sharedTo : [],
     ownerName: item.ownerName || '',
-    machineConfig: isMachineCategory(category) ? machineConfig(item.machineConfig || {}) : machineConfig({}),
+    machineConfig: side === 'supply'
+      ? machineConfig(item.machineConfig || {})
+      : (isMachineCategory(category) ? machineConfig(item.machineConfig || {}) : machineConfig({})),
     createdAt: item.createdAt || '',
     updatedAt: item.updatedAt || item.createdAt || '',
     deleted: Boolean(item.deleted),
@@ -2675,6 +2693,8 @@ const requestHandler = async (req, res) => {
       const body = await bodyJson(req);
       const raw = normalizeMiniItemInput(body);
       const s = miniActor(raw, {}, miniAuth.actor);
+      const validationError = validateMiniSupply(raw);
+      if (validationError) return send(res, 400, { error: validationError });
       const item = cleanItem(raw, s);
       const duplicate = findRecentDuplicateItem(db.items, item);
       if (duplicate) return send(res, 200, { ok: true, duplicate: true, item: miniItem(duplicate, s) });
@@ -2699,6 +2719,8 @@ const requestHandler = async (req, res) => {
       }
       const raw = normalizeMiniItemInput(body, before);
       const s = miniActor(raw, before, miniAuth.actor);
+      const validationError = validateMiniSupply(raw);
+      if (validationError) return send(res, 400, { error: validationError });
       let next = cleanItem(raw, s, before);
       next = applyMiniSyncFields(next, body, s);
       db.items[idx] = next;
